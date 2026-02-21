@@ -28,14 +28,13 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class AuditoriaProposta extends Model
 {
     /**
-     * Tabela append-only — não existe updated_at.
-     * Atribuir false impede o Eloquent de tentar setar qualquer timestamp
-     * automaticamente; CREATED_AT abaixo restaura apenas o created_at.
+     * Tabela append-only — não existe coluna updated_at.
+     * Manter $timestamps = true (padrão) para que o Eloquent preencha
+     * created_at automaticamente no INSERT.
+     * UPDATED_AT = null instrui o Eloquent a nunca tentar setar updated_at,
+     * evitando erro de coluna inexistente sem desligar todo o sistema de timestamps.
      */
-    public $timestamps = false;
-
-    /** @var string */
-    public const CREATED_AT = 'created_at';
+    public const UPDATED_AT = null;
 
     protected $table = 'auditoria_propostas';
 

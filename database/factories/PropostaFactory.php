@@ -40,7 +40,7 @@ class PropostaFactory extends Factory
             'produto'      => $this->faker->randomElement(self::PRODUTOS),
 
             // Valor mensal entre R$ 50,00 e R$ 5.000,00 com 2 casas decimais
-            'valor_mensal' => $this->faker->randomFloat(decimals: 2, min: 50, max: 5_000),
+            'valor_mensal' => $this->faker->randomFloat(2, 50, 5_000),
 
             // Status aleatório dentre todos os casos do Enum
             'status'       => $this->faker->randomElement(PropostaStatusEnum::cases())->value,

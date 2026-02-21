@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Database\Seeders;
 
 use App\Models\Cliente;
-use App\Models\Proposta;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 
@@ -26,19 +25,15 @@ class ClienteSeeder extends Seeder
 
         // Envolve tudo em uma única transação para performance e consistência
         DB::transaction(function () use ($bar): void {
-            Cliente::factory($this->total)
-                ->create()
-                ->each(function (Cliente $cliente) use ($bar): void {
+            for ($i = 0; $i < $this->total; $i++) {
+                // hasPropostas() usa a mágica de relacionamento das factories do Laravel,
+                // resolvendo automaticamente a FK cliente_id sem setá-la manualmente.
+                Cliente::factory()
+                    ->hasPropostas(random_int(1, 5))
+                    ->create();
 
-                    // Cada cliente terá entre 1 e 5 propostas (distribuição uniforme)
-                    $qtd = random_int(1, 5);
-
-                    Proposta::factory($qtd)->create([
-                        'cliente_id' => $cliente->id,
-                    ]);
-
-                    $bar->advance();
-                });
+                $bar->advance();
+            }
         });
 
         $bar->finish();
