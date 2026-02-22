@@ -8,6 +8,7 @@ use App\Enums\PropostaStatusEnum;
 use App\Exceptions\BusinessException;
 use App\Exceptions\ConcurrencyException;
 use App\Models\Proposta;
+use Illuminate\Support\Facades\DB;
 
 /**
  * PropostaService
@@ -22,17 +23,9 @@ use App\Models\Proposta;
  *  - Conflito de versão lança ConcurrencyException (HTTP 409).
  *  - Transição inválida lança BusinessException (HTTP 422).
  *
- * @extends BaseService<Proposta>
  */
-class PropostaService extends BaseService
+class PropostaService
 {
-    /** @var Proposta */
-    protected $model;
-
-    public function __construct(Proposta $proposta)
-    {
-        $this->model = $proposta;
-    }
 
     // -------------------------------------------------------------------------
     // Criação
@@ -48,9 +41,9 @@ class PropostaService extends BaseService
      */
     public function create(array $data): Proposta
     {
-        return $this->transaction(function () use ($data): Proposta {
+        return DB::transaction(function () use ($data): Proposta {
             /** @var Proposta $proposta */
-            $proposta = $this->model->newQuery()->create([
+            $proposta = Proposta::create([
                 ...$data,
                 'status' => PropostaStatusEnum::DRAFT->value,
                 'versao' => 1,
@@ -81,7 +74,7 @@ class PropostaService extends BaseService
      */
     public function update(Proposta $proposta, array $data): Proposta
     {
-        return $this->transaction(function () use ($proposta, $data): Proposta {
+        return DB::transaction(function () use ($proposta, $data): Proposta {
             if ($proposta->status->isTerminal()) {
                 throw BusinessException::because(
                     "A proposta #{$proposta->id} está em estado terminal"
@@ -207,7 +200,7 @@ class PropostaService extends BaseService
      */
     private function transition(Proposta $proposta, PropostaStatusEnum $novoStatus): Proposta
     {
-        return $this->transaction(function () use ($proposta, $novoStatus): Proposta {
+        return DB::transaction(function () use ($proposta, $novoStatus): Proposta {
             $proposta->status = $novoStatus;
             $proposta->versao += 1;
             $proposta->save();

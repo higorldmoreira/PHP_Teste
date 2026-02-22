@@ -11,9 +11,9 @@ use App\Http\Resources\AuditoriaPropostaResource;
 use App\Http\Resources\PropostaResource;
 use App\Models\Proposta;
 use App\Services\PropostaService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
-use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Http\Response;
 
 class PropostaController extends Controller
@@ -72,7 +72,7 @@ class PropostaController extends Controller
      * Cria uma nova proposta via PropostaService (força DRAFT + versao 1).
      * HTTP 201 Created.
      */
-    public function store(StorePropostaRequest $request): JsonResource
+    public function store(StorePropostaRequest $request): JsonResponse
     {
         $data = collect($request->validated())
             ->except('idempotency_key')
@@ -158,7 +158,9 @@ class PropostaController extends Controller
     public function auditoria(Proposta $proposta): AnonymousResourceCollection
     {
         $auditorias = $proposta->auditorias()
-            ->latest('created_at')
+            ->reorder()                        // descarta o orderBy ASC da relação
+            ->orderByDesc('created_at')
+            ->orderByDesc('id')               // desempate determinístico por PK
             ->get();
 
         return AuditoriaPropostaResource::collection($auditorias);
