@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Exceptions;
 
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use RuntimeException;
 use Throwable;
 
@@ -39,6 +41,18 @@ class BusinessException extends RuntimeException
     public function context(): array
     {
         return $this->context;
+    }
+
+    /**
+     * Renderiza a exceção como resposta JSON com HTTP 422.
+     * Chamado automaticamente pelo ExceptionHandler do Laravel 11.
+     */
+    public function render(Request $request): JsonResponse
+    {
+        return new JsonResponse([
+            'error'   => 'Unprocessable Entity',
+            'message' => $this->getMessage(),
+        ], JsonResponse::HTTP_UNPROCESSABLE_ENTITY);
     }
 
     /**

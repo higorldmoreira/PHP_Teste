@@ -6,6 +6,8 @@ namespace App\Models;
 
 use App\Enums\PropostaOrigemEnum;
 use App\Enums\PropostaStatusEnum;
+use App\Observers\PropostaObserver;
+use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -28,6 +30,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property-read Cliente                                                        $cliente
  * @property-read \Illuminate\Database\Eloquent\Collection<int, AuditoriaProposta> $auditorias
  */
+#[ObservedBy(PropostaObserver::class)]
 class Proposta extends Model
 {
     /** @use HasFactory<\Database\Factories\PropostaFactory> */
