@@ -28,19 +28,13 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class AuditoriaProposta extends Model
 {
     /**
-     * Tabela append-only — não existe coluna updated_at.
-     * Manter $timestamps = true (padrão) para que o Eloquent preencha
-     * created_at automaticamente no INSERT.
-     * UPDATED_AT = null instrui o Eloquent a nunca tentar setar updated_at,
-     * evitando erro de coluna inexistente sem desligar todo o sistema de timestamps.
+     * Tabela append-only: sem coluna updated_at.
+     * UPDATED_AT = null instrui o Eloquent a nunca tentar setar essa coluna,
+     * mantendo created_at automático via INSERT sem desligar $timestamps.
      */
     public const UPDATED_AT = null;
 
     protected $table = 'auditoria_propostas';
-
-    // -------------------------------------------------------------------------
-    // Mass Assignment
-    // -------------------------------------------------------------------------
 
     /** @var list<string> */
     protected $fillable = [
@@ -50,28 +44,18 @@ class AuditoriaProposta extends Model
         'payload',
     ];
 
-    // -------------------------------------------------------------------------
-    // Casts
-    // -------------------------------------------------------------------------
-
     protected function casts(): array
     {
         return [
-            // Backed Enum — $auditoria->evento retorna AuditoriaEventoEnum
             'evento'     => AuditoriaEventoEnum::class,
-            // JSON deserializado automaticamente para array associativo PHP
             'payload'    => 'array',
             'created_at' => 'datetime',
         ];
     }
 
-    // -------------------------------------------------------------------------
-    // Relacionamentos
-    // -------------------------------------------------------------------------
-
     /**
-     * Proposta à qual este registro pertence.
-     * withTrashed() garante acesso mesmo após soft-delete da proposta.
+     * withTrashed() garante que a auditoria continue acessível
+     * mesmo depois de a proposta ser soft-deletada.
      *
      * @return BelongsTo<Proposta, AuditoriaProposta>
      */
@@ -80,21 +64,7 @@ class AuditoriaProposta extends Model
         return $this->belongsTo(Proposta::class)->withTrashed();
     }
 
-    // -------------------------------------------------------------------------
-    // Factory helper (uso nos Services)
-    // -------------------------------------------------------------------------
-
     /**
-     * Cria e persiste um registro de auditoria de forma expressiva.
-     *
-     * Exemplo:
-     *   AuditoriaProposta::registrar(
-     *       proposta: $proposta,
-     *       actor:    "user:{$userId}",
-     *       evento:   AuditoriaEventoEnum::STATUS_CHANGED,
-     *       payload:  ['de' => $anterior->value, 'para' => $novo->value],
-     *   );
-     *
      * @param  array<string, mixed>  $payload
      */
     public static function registrar(

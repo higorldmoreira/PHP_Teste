@@ -18,10 +18,6 @@ use App\Models\Proposta;
  */
 class PropostaObserver
 {
-    // -------------------------------------------------------------------------
-    // Helpers
-    // -------------------------------------------------------------------------
-
     /**
      * Resolve o identificador do ator da operação.
      * Usa o usuário autenticado quando disponível; caso contrário, 'system'
@@ -33,10 +29,6 @@ class PropostaObserver
 
         return $id !== null ? 'user:' . $id : 'system';
     }
-
-    // -------------------------------------------------------------------------
-    // Eventos
-    // -------------------------------------------------------------------------
 
     /**
      * Disparado após INSERT bem-sucedido.
@@ -107,10 +99,6 @@ class PropostaObserver
             ],
         );
     }
-
-    // -------------------------------------------------------------------------
-    // Utilitário de serialização
-    // -------------------------------------------------------------------------
 
     /**
      * Converte atributos para tipos primitivos serializáveis em JSON.

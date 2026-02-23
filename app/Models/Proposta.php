@@ -37,10 +37,6 @@ class Proposta extends Model
     use HasFactory;
     use SoftDeletes;
 
-    // -------------------------------------------------------------------------
-    // Mass Assignment
-    // -------------------------------------------------------------------------
-
     /** @var list<string> */
     protected $fillable = [
         'cliente_id',
@@ -51,16 +47,10 @@ class Proposta extends Model
         'versao',
     ];
 
-    // -------------------------------------------------------------------------
-    // Casts
-    // -------------------------------------------------------------------------
-
     protected function casts(): array
     {
         return [
-            // Backed Enums — $proposta->status retorna PropostaStatusEnum
             'status'       => PropostaStatusEnum::class,
-            // Backed Enum — $proposta->origem retorna PropostaOrigemEnum
             'origem'       => PropostaOrigemEnum::class,
             // 'decimal:2' retorna string — use bcmath para operações monetárias
             'valor_mensal' => 'decimal:2',
@@ -70,10 +60,6 @@ class Proposta extends Model
             'deleted_at'   => 'datetime',
         ];
     }
-
-    // -------------------------------------------------------------------------
-    // Relacionamentos
-    // -------------------------------------------------------------------------
 
     /**
      * Cliente dono desta proposta.
@@ -95,10 +81,6 @@ class Proposta extends Model
     {
         return $this->hasMany(AuditoriaProposta::class)->orderBy('created_at');
     }
-
-    // -------------------------------------------------------------------------
-    // Scopes
-    // -------------------------------------------------------------------------
 
     /**
      * Filtra propostas por status.
@@ -123,10 +105,6 @@ class Proposta extends Model
     {
         return $query->where('origem', $origem->value);
     }
-
-    // -------------------------------------------------------------------------
-    // Helpers de domínio
-    // -------------------------------------------------------------------------
 
     /**
      * Incrementa a versão da proposta.

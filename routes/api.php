@@ -6,7 +6,6 @@ use App\Http\Controllers\Api\V1\AuthController;
 use App\Http\Controllers\Api\V1\ClienteController;
 use App\Http\Controllers\Api\V1\OrderController;
 use App\Http\Controllers\Api\V1\PropostaController;
-use App\Http\Middleware\IdempotencyMiddleware;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -20,7 +19,6 @@ use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1')->group(function (): void {
 
-    // ── Autenticação (rotas públicas) ─────────────────────────────────────────
 
     Route::prefix('auth')->name('auth.')->group(function (): void {
         Route::post('register', [AuthController::class, 'register'])->name('register');
@@ -32,11 +30,8 @@ Route::prefix('v1')->group(function (): void {
         });
     });
 
-    // ── Rotas protegidas por autenticação ─────────────────────────────────────
-
     Route::middleware('auth:api')->group(function (): void {
 
-        // ── Clientes ──────────────────────────────────────────────────────────
 
         Route::post('clientes', [ClienteController::class, 'store'])
             ->middleware('idempotency')
@@ -45,7 +40,6 @@ Route::prefix('v1')->group(function (): void {
         Route::get('clientes/{cliente}', [ClienteController::class, 'show'])
             ->name('clientes.show');
 
-        // ── Propostas ─────────────────────────────────────────────────────────
 
         Route::get('propostas', [PropostaController::class, 'index'])
             ->name('propostas.index');
@@ -60,7 +54,6 @@ Route::prefix('v1')->group(function (): void {
         Route::patch('propostas/{proposta}', [PropostaController::class, 'update'])
             ->name('propostas.update');
 
-        // Transições de status
         Route::post('propostas/{proposta}/submit', [PropostaController::class, 'submit'])
             ->name('propostas.submit');
 
@@ -76,7 +69,6 @@ Route::prefix('v1')->group(function (): void {
         Route::get('propostas/{proposta}/auditoria', [PropostaController::class, 'auditoria'])
             ->name('propostas.auditoria');
 
-        // ── Orders ────────────────────────────────────────────────────────────
 
         Route::get('orders', [OrderController::class, 'index'])
             ->name('orders.index');

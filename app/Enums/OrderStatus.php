@@ -20,10 +20,6 @@ enum OrderStatus: string
     case Delivered = 'delivered';
     case Cancelled = 'cancelled';
 
-    // -------------------------------------------------------------------------
-    // Métodos auxiliares — lógica de domínio fica encapsulada no Enum
-    // -------------------------------------------------------------------------
-
     /**
      * Rótulo legível para exibição em UI ou logs.
      */

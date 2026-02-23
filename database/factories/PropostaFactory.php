@@ -52,10 +52,6 @@ class PropostaFactory extends Factory
         ];
     }
 
-    // -------------------------------------------------------------------------
-    // Estados (states) — convenientes em testes de integração
-    // -------------------------------------------------------------------------
-
     public function draft(): static
     {
         return $this->state(fn() => ['status' => PropostaStatusEnum::DRAFT->value]);

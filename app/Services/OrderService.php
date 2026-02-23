@@ -33,7 +33,6 @@ class OrderService extends BaseService
         $this->model = $order;
     }
 
-    // ── Criação ────────────────────────────────────────────────────────────────
 
     /**
      * Cria um pedido a partir de uma Proposta APPROVED.
@@ -69,7 +68,6 @@ class OrderService extends BaseService
         });
     }
 
-    // ── Cancelamento ───────────────────────────────────────────────────────────
 
     /**
      * Cancela um pedido se o status permitir.
@@ -92,7 +90,6 @@ class OrderService extends BaseService
         });
     }
 
-    // ── Consultas ──────────────────────────────────────────────────────────────
 
     /**
      * Retorna pedidos paginados do usuario autenticado,

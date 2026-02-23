@@ -32,10 +32,6 @@ abstract class BaseService
      */
     protected Model $model;
 
-    // -------------------------------------------------------------------------
-    // Operações CRUD base — podem ser sobrescritas nas subclasses
-    // -------------------------------------------------------------------------
-
     /**
      * Retorna todos os registros, com suporte opcional a colunas específicas.
      *
@@ -108,10 +104,6 @@ abstract class BaseService
 
         return (bool) $record->delete();
     }
-
-    // -------------------------------------------------------------------------
-    // Utilitários de suporte — disponíveis para todas as subclasses
-    // -------------------------------------------------------------------------
 
     /**
      * Executa um callable dentro de uma transação de banco de dados.

@@ -1,59 +1,200 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# PHP Test — API Laravel 12
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+REST API desenvolvida em **Laravel 12** como teste técnico PHP. Implementa gestão de clientes e propostas com máquina de estados, lock otimista, idempotência, auditoria automática, autenticação OAuth2 (Passport) e documentação interativa (Swagger).
 
-## About Laravel
+---
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+## Tecnologias
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+| Camada | Tecnologia |
+|---|---|
+| Framework | Laravel 12 / PHP 8.2+ |
+| Banco de dados | MySQL 8.0 |
+| Cache / Filas | Redis 7 |
+| Autenticação | Laravel Passport (OAuth2) |
+| Documentação | L5-Swagger / OpenAPI 3.0 |
+| Testes | PHPUnit — SQLite in-memory |
+| Infraestrutura | Docker / Docker Compose |
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+---
 
-## Learning Laravel
+## Requisitos
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework. You can also check out [Laravel Learn](https://laravel.com/learn), where you will be guided through building a modern Laravel application.
+- Docker e Docker Compose instalados
+- Portas `3306` (MySQL), `6379` (Redis) e `80` disponíveis
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+---
 
-## Laravel Sponsors
+## Instalação
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+```bash
+# 1. Clone o repositório
+git clone https://github.com/higorldmoreira/PHP_Teste.git
+cd php-teste
 
-### Premium Partners
+# 2. Copie o arquivo de ambiente
+cp .env.example .env
 
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
+# 3. Suba os containers
+docker compose -f docker-compose.yml up -d
 
-## Contributing
+# 4. Instale as dependências dentro do container
+docker exec -it php_teste composer install
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+# 5. Gere a chave da aplicação
+docker exec -it php_teste php artisan key:generate
 
-## Code of Conduct
+# 6. Execute as migrations e seeders
+docker exec -it php_teste php artisan migrate --seed
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+# 7. Publique as chaves do Passport
+docker exec -it php_teste php artisan passport:keys --force
+```
 
-## Security Vulnerabilities
+A API ficará disponível em `http://localhost/api/v1`.
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+---
 
-## License
+## Credenciais padrão
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+Após executar `migrate --seed`, os seguintes dados estarão disponíveis:
+
+| Campo | Valor |
+|---|---|
+| E-mail | `admin@teste.com` |
+| Senha | `password` |
+
+Use o endpoint `POST /api/v1/auth/login` para obter o Bearer Token.
+
+---
+
+## Documentação Swagger
+
+Acesse a UI interativa em:
+
+```
+http://localhost/api/documentation
+```
+
+Para regenerar o JSON (`storage/api-docs/api-docs.json`):
+
+```bash
+php artisan l5-swagger:generate
+```
+
+---
+
+## Endpoints
+
+### Autenticação
+
+| Método | Rota | Descrição | Auth |
+|---|---|---|---|
+| `POST` | `/api/v1/auth/register` | Cadastra novo usuário | — |
+| `POST` | `/api/v1/auth/login` | Obtém Bearer Token | — |
+| `POST` | `/api/v1/auth/logout` | Revoga o token atual | ✓ |
+| `GET` | `/api/v1/auth/me` | Dados do usuário autenticado | ✓ |
+
+### Clientes
+
+| Método | Rota | Descrição | Auth | Idempotência |
+|---|---|---|---|---|
+| `POST` | `/api/v1/clientes` | Cria cliente | ✓ | ✓ |
+| `GET` | `/api/v1/clientes/{id}` | Detalha cliente | ✓ | — |
+
+### Propostas
+
+| Método | Rota | Descrição | Auth | Idempotência |
+|---|---|---|---|---|
+| `GET` | `/api/v1/propostas` | Lista propostas (filtros + paginação) | ✓ | — |
+| `POST` | `/api/v1/propostas` | Cria proposta (DRAFT) | ✓ | ✓ |
+| `GET` | `/api/v1/propostas/{id}` | Detalha proposta | ✓ | — |
+| `PATCH` | `/api/v1/propostas/{id}` | Atualiza proposta (optimistic lock) | ✓ | — |
+| `POST` | `/api/v1/propostas/{id}/submit` | DRAFT → SUBMITTED | ✓ | — |
+| `POST` | `/api/v1/propostas/{id}/approve` | SUBMITTED → APPROVED | ✓ | — |
+| `POST` | `/api/v1/propostas/{id}/reject` | SUBMITTED → REJECTED | ✓ | — |
+| `POST` | `/api/v1/propostas/{id}/cancel` | DRAFT/SUBMITTED → CANCELED | ✓ | — |
+| `GET` | `/api/v1/propostas/{id}/auditoria` | Histórico de auditoria | ✓ | — |
+
+### Orders (Pedidos)
+
+| Método | Rota | Descrição | Auth |
+|---|---|---|---|
+| `GET` | `/api/v1/orders` | Lista pedidos do usuário | ✓ |
+| `POST` | `/api/v1/propostas/{id}/orders` | Cria pedido a partir de proposta APPROVED | ✓ |
+| `GET` | `/api/v1/orders/{id}` | Detalha pedido | ✓ |
+| `POST` | `/api/v1/orders/{id}/cancel` | Cancela pedido | ✓ |
+
+---
+
+## Máquina de estados — Proposta
+
+```
+                  ┌─────────┐
+             ┌───►│SUBMITTED├───► APPROVED ──► (terminal)
+             │    └────┬────┘
+ DRAFT ──────┤         └──────────► REJECTED ──► (terminal)
+             │
+             └──────────────────────────────────► CANCELED ──► (terminal)
+
+Qualquer estado não-terminal pode ir para CANCELED.
+```
+
+---
+
+## Idempotência
+
+Endpoints de mutação marcados com **Idempotência ✓** aceitam o header:
+
+```
+Idempotency-Key: <uuid>
+```
+
+Respostas 2xx ficam em cache por **24 horas**. Replays retornam o header `X-Idempotency-Replayed: true`.
+
+---
+
+## Optimistic Lock
+
+Ao atualizar uma proposta via `PATCH`, a requisição deve enviar o campo `versao` com o valor atual do registro. Divergência retorna `HTTP 409 Conflict`.
+
+---
+
+## Executando os testes
+
+Os testes usam **SQLite in-memory** e não dependem do Docker.
+
+```bash
+php artisan test
+# ou
+./vendor/bin/phpunit
+```
+
+| Suite | Arquivo |
+|---|---|
+| Auth | `tests/Feature/AuthTest.php` |
+| Orders | `tests/Feature/OrderTest.php` |
+| Auditoria | `tests/Feature/AuditoriaTest.php` |
+| Idempotência | `tests/Feature/IdempotencyTest.php` |
+| Optimistic Lock | `tests/Feature/OptimisticLockTest.php` |
+| Busca de propostas | `tests/Feature/PropostaSearchTest.php` |
+| Transições de status | `tests/Feature/PropostaStatusTransitionTest.php` |
+
+---
+
+## Arquitetura
+
+```
+app/
+├── Enums/           # Backed enums do domínio (PropostaStatusEnum, OrderStatus…)
+├── Exceptions/      # BusinessException (422) e ConcurrencyException (409)
+├── Http/
+│   ├── Controllers/ # Api/V1 — thin controllers, delegam para Services
+│   ├── Middleware/  # IdempotencyMiddleware
+│   ├── Requests/    # Form Requests com validação e autorização
+│   └── Resources/   # API Resources (transformação de saída)
+├── Models/          # Eloquent models com casts, scopes e relacionamentos
+├── Observers/       # PropostaObserver — auditoria automática via Eloquent events
+├── Providers/       # AppServiceProvider — bindings e configuração Passport
+└── Services/        # Camada de negócio (PropostaService, OrderService)
+```

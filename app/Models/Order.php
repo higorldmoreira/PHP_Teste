@@ -28,7 +28,6 @@ class Order extends Model
         ];
     }
 
-    // ── Relacionamentos ───────────────────────────────────────────────────────
 
     public function proposta(): BelongsTo
     {
@@ -40,7 +39,6 @@ class Order extends Model
         return $this->belongsTo(User::class);
     }
 
-    // ── Scopes ────────────────────────────────────────────────────────────────
 
     public function scopePorStatus($query, OrderStatus $status)
     {

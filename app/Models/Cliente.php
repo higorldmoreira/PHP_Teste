@@ -25,20 +25,12 @@ class Cliente extends Model
     /** @use HasFactory<\Database\Factories\ClienteFactory> */
     use HasFactory;
 
-    // -------------------------------------------------------------------------
-    // Mass Assignment
-    // -------------------------------------------------------------------------
-
     /** @var list<string> */
     protected $fillable = [
         'nome',
         'email',
         'documento',
     ];
-
-    // -------------------------------------------------------------------------
-    // Casts
-    // -------------------------------------------------------------------------
 
     protected function casts(): array
     {
@@ -47,10 +39,6 @@ class Cliente extends Model
             'updated_at' => 'datetime',
         ];
     }
-
-    // -------------------------------------------------------------------------
-    // Relacionamentos
-    // -------------------------------------------------------------------------
 
     /**
      * Todas as propostas do cliente, incluindo soft-deleted.
@@ -71,10 +59,6 @@ class Cliente extends Model
     {
         return $this->hasMany(Proposta::class)->withoutTrashed();
     }
-
-    // -------------------------------------------------------------------------
-    // Scopes
-    // -------------------------------------------------------------------------
 
     /**
      * Filtra clientes pelo documento (CPF ou CNPJ).

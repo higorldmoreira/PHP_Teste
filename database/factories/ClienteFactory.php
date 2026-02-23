@@ -29,10 +29,6 @@ class ClienteFactory extends Factory
         ];
     }
 
-    // -------------------------------------------------------------------------
-    // Estados (states) — usados nos testes
-    // -------------------------------------------------------------------------
-
     /** Cliente com CPF explícito. */
     public function comCpf(): static
     {
@@ -45,14 +41,10 @@ class ClienteFactory extends Factory
         return $this->state(fn() => ['documento' => $this->gerarCnpj()]);
     }
 
-    // -------------------------------------------------------------------------
-    // Geração de documentos válidos
-    // Implementados localmente para não depender do locale pt_BR do Faker,
-    // garantindo que os dígitos verificadores sejam sempre matematicamente corretos.
-    // -------------------------------------------------------------------------
-
     /**
      * Gera um CPF válido com 11 dígitos (sem formatação).
+     * Implementado localmente para não depender do locale pt_BR do Faker,
+     * garantindo que os dígitos verificadores sejam matematicamente corretos.
      */
     private function gerarCpf(): string
     {

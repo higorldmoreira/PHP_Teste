@@ -27,10 +27,6 @@ use Illuminate\Support\Facades\DB;
 class PropostaService
 {
 
-    // -------------------------------------------------------------------------
-    // Criação
-    // -------------------------------------------------------------------------
-
     /**
      * Cria uma nova proposta forçando status DRAFT e versão 1,
      * independentemente do que vier em $data.
@@ -52,10 +48,6 @@ class PropostaService
             return $proposta;
         });
     }
-
-    // -------------------------------------------------------------------------
-    // Atualização com Optimistic Lock
-    // -------------------------------------------------------------------------
 
     /**
      * Atualiza campos da proposta após validar lock otimista.
@@ -99,10 +91,6 @@ class PropostaService
             return $proposta->refresh();
         });
     }
-
-    // -------------------------------------------------------------------------
-    // Máquina de Estados
-    // -------------------------------------------------------------------------
 
     /**
      * DRAFT → SUBMITTED
@@ -187,10 +175,6 @@ class PropostaService
 
         return $this->transition($proposta, PropostaStatusEnum::CANCELED);
     }
-
-    // -------------------------------------------------------------------------
-    // Utilitário interno de transição
-    // -------------------------------------------------------------------------
 
     /**
      * Aplica a transição de status e incrementa a versão atomicamente.

@@ -24,10 +24,6 @@ class PropostaController extends Controller
         private readonly PropostaService $propostaService,
     ) {}
 
-    // -------------------------------------------------------------------------
-    // CRUD
-    // -------------------------------------------------------------------------
-
     #[OA\Get(
         path: '/api/v1/propostas',
         summary: 'Lista propostas com filtros e paginação',
@@ -139,10 +135,6 @@ class PropostaController extends Controller
         return new PropostaResource($proposta->load('cliente'));
     }
 
-    // -------------------------------------------------------------------------
-    // Transições de Estado
-    // -------------------------------------------------------------------------
-
     #[OA\Post(path: '/api/v1/propostas/{proposta}/submit', summary: 'DRAFT → SUBMITTED', security: [['bearerAuth' => []]], tags: ['Propostas'], parameters: [new OA\Parameter(name: 'proposta', in: 'path', required: true, schema: new OA\Schema(type: 'integer'))], responses: [new OA\Response(response: 200, description: 'Proposta submetida', content: new OA\JsonContent(ref: '#/components/schemas/PropostaResource')), new OA\Response(response: 401, description: 'Não autenticado'), new OA\Response(response: 422, description: 'Transição inválida', content: new OA\JsonContent(ref: '#/components/schemas/ErrorBusiness'))])]
     public function submit(Proposta $proposta): PropostaResource
     {
@@ -174,10 +166,6 @@ class PropostaController extends Controller
             $this->propostaService->cancel($proposta)->load('cliente')
         );
     }
-
-    // -------------------------------------------------------------------------
-    // Auditoria
-    // -------------------------------------------------------------------------
 
     #[OA\Get(
         path: '/api/v1/propostas/{proposta}/auditoria',
