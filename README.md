@@ -1,4 +1,4 @@
-# PHP Teste — Laravel 12 REST API
+# Gestor de Propostas — Laravel 12 REST API
 
 API RESTful construída em **Laravel 12 / PHP 8.2** sem autenticação, com foco em Clean Code, SOLID e boas práticas de engenharia de software.
 
