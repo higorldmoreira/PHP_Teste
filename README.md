@@ -130,41 +130,34 @@ PENDING ──cancel──► CANCELED (terminal)
 
 ### Pré-requisitos
 
-- [Docker Desktop](https://www.docker.com/products/docker-desktop/) instalado e em execução
+| Ferramenta | Versão mínima | Download |
+|------------|--------------|----------|
+| [Docker Desktop](https://www.docker.com/products/docker-desktop/) | 24+ | obrigatório |
+| [PHP](https://www.php.net/downloads) | 8.2+ | obrigatório (apenas para `composer install` e `key:generate` locais) |
+| [Composer](https://getcomposer.org/download/) | 2+ | obrigatório |
 
-> **Windows:** o Laravel Sail exige **WSL2 com uma distro Linux** (ex.: Ubuntu).  
-> Sem isso, o comando `./vendor/bin/sail` falha com `execvpe(/bin/bash) failed`.
-
----
-
-### 1. Configurar WSL2 (somente Windows)
-
-Abra o **PowerShell como Administrador** e execute:
-
-```powershell
-wsl --install -d Ubuntu
-```
-
-Reinicie o computador quando solicitado. Após reiniciar, o Ubuntu será configurado automaticamente.
-
-Abra o Docker Desktop → **Settings → Resources → WSL Integration** → habilite a integração com a distro Ubuntu instalada.
+> **Por que PHP local?** `composer install` e `php artisan key:generate` rodam na máquina host antes de subir os containers. Após isso, tudo acontece dentro do Docker. Se preferir não instalar PHP localmente, consulte a seção [Sem PHP local](#sem-php-local).
 
 ---
 
-### 2. Clonar e configurar
-
-> **Windows:** execute os próximos passos dentro do terminal **WSL2/Ubuntu**, não no PowerShell.
+### 1. Clonar o repositório
 
 ```bash
-# Clonar o repositório (dentro do WSL2 no Windows, ou terminal normal no Linux/macOS)
 git clone https://github.com/higorldmoreira/Gestor_Propostas.git
 cd Gestor_Propostas
+```
 
-# Instalar dependências PHP
+---
+
+### 2. Instalar dependências e configurar o ambiente
+
+```bash
+# Instalar pacotes PHP
 composer install
 
-# Copiar o arquivo de variáveis de ambiente
-cp .env.example .env
+# Copiar arquivo de variáveis de ambiente
+cp .env.example .env      # Linux / macOS / Git Bash
+# copy .env.example .env  # PowerShell / CMD (Windows)
 
 # Gerar a chave da aplicação
 php artisan key:generate
@@ -174,16 +167,28 @@ php artisan key:generate
 
 ### 3. Subir os containers
 
-```bash
-./vendor/bin/sail up -d
-```
+> **Linux / macOS** — use o script Sail:
+> ```bash
+> ./vendor/bin/sail up -d
+> ```
+
+> **Windows (PowerShell / CMD)** — use `docker compose` diretamente (não requer WSL):
+> ```powershell
+> docker compose up -d
+> ```
+
+Aguarde até todos os serviços estarem `healthy` (~30 s na primeira vez, pois o MySQL precisa inicializar).
 
 ---
 
 ### 4. Migrations + Seed
 
 ```bash
+# Linux / macOS
 ./vendor/bin/sail artisan migrate:fresh --seed
+
+# Windows PowerShell
+docker compose exec laravel.test php artisan migrate:fresh --seed
 ```
 
 ---
@@ -191,12 +196,66 @@ php artisan key:generate
 ### 5. Testes
 
 ```bash
+# Linux / macOS
 ./vendor/bin/sail artisan test
+
+# Windows PowerShell
+docker compose exec laravel.test php artisan test
 ```
 
 ---
 
 > **URL padrão (desenvolvimento):** `http://localhost:8050`
+
+---
+
+### Sem PHP local
+
+Se não quiser instalar PHP na máquina host, use a imagem oficial do Sail para rodar o Composer dentro do Docker:
+
+```bash
+# Linux / macOS
+docker run --rm \
+    -u "$(id -u):$(id -g)" \
+    -v "$(pwd):/var/www/html" \
+    -w /var/www/html \
+    laravelsail/php85-composer:latest \
+    composer install --ignore-platform-reqs
+
+# Windows PowerShell
+docker run --rm `
+    -v "${PWD}:/var/www/html" `
+    -w /var/www/html `
+    laravelsail/php85-composer:latest `
+    composer install --ignore-platform-reqs
+```
+
+Depois gere a chave com:
+
+```bash
+# Linux / macOS
+./vendor/bin/sail up -d
+./vendor/bin/sail artisan key:generate
+
+# Windows PowerShell
+docker compose up -d
+docker compose exec laravel.test php artisan key:generate
+docker compose exec laravel.test php artisan migrate:fresh --seed
+```
+
+---
+
+### Aliases úteis (opcional)
+
+**Linux / macOS** — adicione ao `~/.bashrc` ou `~/.zshrc`:
+```bash
+alias sail='./vendor/bin/sail'
+```
+
+**Windows PowerShell** — adicione ao seu `$PROFILE`:
+```powershell
+function sail { docker compose exec laravel.test php artisan $args }
+```
 
 ---
 
