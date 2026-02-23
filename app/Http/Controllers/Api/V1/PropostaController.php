@@ -41,32 +41,11 @@ class PropostaController extends Controller
     )]
     public function index(Request $request): AnonymousResourceCollection
     {
-        $query = Proposta::with('cliente');
+        $perPage = (int) $request->query('per_page', 15);
 
-        if ($status = $request->query('status')) {
-            $query->where('status', $status);
-        }
-
-        if ($clienteId = $request->query('cliente_id')) {
-            $query->where('cliente_id', (int) $clienteId);
-        }
-
-        $sortField     = $request->query('sort', 'created_at');
-        $sortDirection = $request->query('direction', 'desc');
-
-        // Allowlist de campos ordenáveis para evitar injeção via query string
-        $allowedSorts = ['created_at', 'updated_at', 'valor_mensal', 'status', 'versao'];
-        if (! in_array($sortField, $allowedSorts, strict: true)) {
-            $sortField = 'created_at';
-        }
-
-        $sortDirection = $sortDirection === 'asc' ? 'asc' : 'desc';
-
-        $query->orderBy($sortField, $sortDirection);
-
-        $perPage = min((int) $request->query('per_page', 15), 100);
-
-        return PropostaResource::collection($query->paginate($perPage));
+        return PropostaResource::collection(
+            $this->propostaService->search($request->query(), $perPage)
+        );
     }
 
     #[OA\Post(

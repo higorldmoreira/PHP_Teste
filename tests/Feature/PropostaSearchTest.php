@@ -119,4 +119,42 @@ class PropostaSearchTest extends TestCase
         $response->assertJsonPath('meta.total', 5);
         $response->assertJsonPath('meta.last_page', 3);
     }
+
+    // -------------------------------------------------------------------------
+    // Teste 4 — Ordenação por campo
+    // -------------------------------------------------------------------------
+
+    public function test_ordena_propostas_por_campo(): void
+    {
+        $cliente = Cliente::factory()->create();
+
+        Proposta::factory()->draft()->create(['cliente_id' => $cliente->id, 'valor_mensal' => 100.00]);
+        Proposta::factory()->draft()->create(['cliente_id' => $cliente->id, 'valor_mensal' => 300.00]);
+        Proposta::factory()->draft()->create(['cliente_id' => $cliente->id, 'valor_mensal' => 200.00]);
+
+        $response = $this->getJson('/api/v1/propostas?sort=valor_mensal&direction=asc');
+
+        $response->assertStatus(200);
+        $items = $response->json('data');
+
+        $this->assertSame(100.0, (float) $items[0]['valor_mensal']);
+        $this->assertSame(200.0, (float) $items[1]['valor_mensal']);
+        $this->assertSame(300.0, (float) $items[2]['valor_mensal']);
+    }
+
+    // -------------------------------------------------------------------------
+    // Teste 5 — Sort inválido cai no padrão
+    // -------------------------------------------------------------------------
+
+    public function test_sort_invalido_usa_padrao(): void
+    {
+        $cliente = Cliente::factory()->create();
+        Proposta::factory()->count(3)->draft()->create(['cliente_id' => $cliente->id]);
+
+        // Campo inexistente na allowlist não deve causar erro
+        $response = $this->getJson('/api/v1/propostas?sort=campo_invalido&direction=desc');
+
+        $response->assertStatus(200);
+        $response->assertJsonCount(3, 'data');
+    }
 }

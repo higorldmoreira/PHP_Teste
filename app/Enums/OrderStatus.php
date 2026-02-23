@@ -5,50 +5,43 @@ declare(strict_types=1);
 namespace App\Enums;
 
 /**
- * OrderStatus
+ * Estados possíveis de um pedido (Order).
  *
- * Enum nativo PHP 8.1+ (backed enum com string).
- * Usar backed enums permite persistir o valor no banco
- * e comparar diretamente: $order->status === OrderStatus::Approved
+ * Convenção: SCREAMING_SNAKE_CASE, alinhado aos demais enums do projeto.
+ * Valor string: americano singular, compatível com coluna `status` no banco.
  */
 enum OrderStatus: string
 {
-    case Pending  = 'pending';
-    case Approved = 'approved';
-    case Rejected = 'rejected';
-    case Shipped  = 'shipped';
-    case Delivered = 'delivered';
-    case Cancelled = 'cancelled';
+    case PENDING   = 'pending';
+    case APPROVED  = 'approved';
+    case REJECTED  = 'rejected';
+    case SHIPPED   = 'shipped';
+    case DELIVERED = 'delivered';
+    case CANCELED  = 'canceled';
 
-    /**
-     * Rótulo legível para exibição em UI ou logs.
-     */
+    /** Rótulo legível para exibição em UI ou logs. */
     public function label(): string
     {
         return match($this) {
-            self::Pending   => 'Aguardando pagamento',
-            self::Approved  => 'Aprovado',
-            self::Rejected  => 'Rejeitado',
-            self::Shipped   => 'Enviado',
-            self::Delivered => 'Entregue',
-            self::Cancelled => 'Cancelado',
+            self::PENDING   => 'Aguardando pagamento',
+            self::APPROVED  => 'Aprovado',
+            self::REJECTED  => 'Rejeitado',
+            self::SHIPPED   => 'Enviado',
+            self::DELIVERED => 'Entregue',
+            self::CANCELED  => 'Cancelado',
         };
     }
 
-    /**
-     * Retorna se o pedido pode ser cancelado neste status.
-     */
+    /** Retorna true se o pedido pode ser cancelado neste status. */
     public function isCancellable(): bool
     {
-        return in_array($this, [self::Pending, self::Approved], strict: true);
+        return $this === self::PENDING;
     }
 
-    /**
-     * Retorna se o pedido está em um estado terminal (não muda mais).
-     */
+    /** Retorna true se o pedido está em um estado terminal (não muda mais). */
     public function isTerminal(): bool
     {
-        return in_array($this, [self::Delivered, self::Cancelled, self::Rejected], strict: true);
+        return in_array($this, [self::DELIVERED, self::CANCELED, self::REJECTED], strict: true);
     }
 
     /**

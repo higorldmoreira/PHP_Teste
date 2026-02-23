@@ -172,4 +172,64 @@ class PropostaStatusTransitionTest extends TestCase
             'versao'  => 1,
         ]);
     }
+
+    // -------------------------------------------------------------------------
+    // Testes de Rejeição e Cancelamento
+    // -------------------------------------------------------------------------
+
+    /**
+     * SUBMITTED → REJECTED
+     */
+    public function test_submitted_pode_ser_rejeitada(): void
+    {
+        $proposta = $this->criarProposta('submitted');
+
+        $response = $this->postJson("/api/v1/propostas/{$proposta->id}/reject");
+
+        $response->assertStatus(200);
+        $response->assertJsonPath('data.status', PropostaStatusEnum::REJECTED->value);
+        $response->assertJsonPath('data.versao', 2);
+
+        $this->assertDatabaseHas('propostas', [
+            'id'     => $proposta->id,
+            'status' => PropostaStatusEnum::REJECTED->value,
+        ]);
+    }
+
+    /**
+     * SUBMITTED → CANCELED
+     */
+    public function test_submitted_pode_ser_cancelada(): void
+    {
+        $proposta = $this->criarProposta('submitted');
+
+        $response = $this->postJson("/api/v1/propostas/{$proposta->id}/cancel");
+
+        $response->assertStatus(200);
+        $response->assertJsonPath('data.status', PropostaStatusEnum::CANCELED->value);
+        $response->assertJsonPath('data.versao', 2);
+
+        $this->assertDatabaseHas('propostas', [
+            'id'     => $proposta->id,
+            'status' => PropostaStatusEnum::CANCELED->value,
+        ]);
+    }
+
+    /**
+     * REJECTED não pode mudar de estado (terminal).
+     */
+    public function test_rejected_nao_pode_mudar_de_estado(): void
+    {
+        $proposta = $this->criarProposta('rejected');
+
+        $this->postJson("/api/v1/propostas/{$proposta->id}/submit")->assertStatus(422);
+        $this->postJson("/api/v1/propostas/{$proposta->id}/approve")->assertStatus(422);
+        $this->postJson("/api/v1/propostas/{$proposta->id}/cancel")->assertStatus(422);
+
+        // Status não alterado
+        $this->assertDatabaseHas('propostas', [
+            'id'     => $proposta->id,
+            'status' => PropostaStatusEnum::REJECTED->value,
+        ]);
+    }
 }

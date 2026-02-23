@@ -29,7 +29,7 @@ class OrderTest extends TestCase
         $response->assertJsonStructure([
             'data' => ['id', 'proposta_id', 'status', 'status_label', 'valor_total'],
         ]);
-        $response->assertJsonPath('data.status', OrderStatus::Pending->value);
+        $response->assertJsonPath('data.status', OrderStatus::PENDING->value);
         $response->assertJsonPath('data.proposta_id', $proposta->id);
 
         $this->assertDatabaseCount('orders', 1);
@@ -92,11 +92,11 @@ class OrderTest extends TestCase
         $response = $this->postJson("/api/v1/orders/{$order->id}/cancel");
 
         $response->assertStatus(200);
-        $response->assertJsonPath('data.status', OrderStatus::Cancelled->value);
+        $response->assertJsonPath('data.status', OrderStatus::CANCELED->value);
 
         $this->assertDatabaseHas('orders', [
             'id'     => $order->id,
-            'status' => OrderStatus::Cancelled->value,
+            'status' => OrderStatus::CANCELED->value,
         ]);
     }
 
@@ -109,5 +109,39 @@ class OrderTest extends TestCase
         $order = Order::factory()->delivered()->create(['proposta_id' => $proposta->id]);
 
         $this->postJson("/api/v1/orders/{$order->id}/cancel")->assertStatus(422);
+    }
+
+    // ── Exibir por ID ───────────────────────────────────────────────────────────────────────
+
+    public function test_exibe_order_pelo_id(): void
+    {
+        $proposta = Proposta::factory()->approved()->create([
+            'cliente_id' => Cliente::factory()->create()->id,
+        ]);
+        $order = Order::factory()->pending()->create(['proposta_id' => $proposta->id]);
+
+        $response = $this->getJson("/api/v1/orders/{$order->id}");
+
+        $response->assertStatus(200);
+        $response->assertJsonPath('data.id', $order->id);
+        $response->assertJsonPath('data.status', OrderStatus::PENDING->value);
+    }
+
+    // ── Filtro por status ──────────────────────────────────────────────────────────────────
+
+    public function test_filtra_orders_por_status(): void
+    {
+        $proposta = Proposta::factory()->approved()->create([
+            'cliente_id' => Cliente::factory()->create()->id,
+        ]);
+
+        Order::factory()->pending()->create(['proposta_id' => $proposta->id]);
+        Order::factory()->canceled()->create(['proposta_id' => $proposta->id]);
+
+        $response = $this->getJson('/api/v1/orders?status=' . OrderStatus::PENDING->value);
+
+        $response->assertStatus(200);
+        $response->assertJsonCount(1, 'data');
+        $response->assertJsonPath('data.0.status', OrderStatus::PENDING->value);
     }
 }

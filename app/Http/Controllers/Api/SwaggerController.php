@@ -55,7 +55,7 @@ use OpenApi\Attributes as OA;
     properties: [
         new OA\Property(property: 'id', type: 'integer', example: 1),
         new OA\Property(property: 'proposta_id', type: 'integer', example: 1),
-        new OA\Property(property: 'status', type: 'string', enum: ['pending', 'approved', 'rejected', 'shipped', 'delivered', 'cancelled'], example: 'pending'),
+        new OA\Property(property: 'status', type: 'string', enum: ['pending', 'approved', 'rejected', 'shipped', 'delivered', 'canceled'], example: 'pending'),
         new OA\Property(property: 'status_label', type: 'string', example: 'Aguardando pagamento'),
         new OA\Property(property: 'valor_total', type: 'number', format: 'float', example: 1200.00),
         new OA\Property(property: 'observacoes', type: 'string', nullable: true),

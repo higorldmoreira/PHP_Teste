@@ -8,6 +8,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreClienteRequest;
 use App\Http\Resources\ClienteResource;
 use App\Models\Cliente;
+use App\Services\ClienteService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Response;
 use OpenApi\Attributes as OA;
@@ -15,6 +16,9 @@ use OpenApi\Attributes as OA;
 #[OA\Tag(name: 'Clientes', description: 'Gestão de clientes')]
 class ClienteController extends Controller
 {
+    public function __construct(
+        private readonly ClienteService $clienteService,
+    ) {}
     #[OA\Post(
         path: '/api/v1/clientes',
         summary: 'Cria um novo cliente',
@@ -38,7 +42,7 @@ class ClienteController extends Controller
     )]
     public function store(StoreClienteRequest $request): JsonResponse
     {
-        $cliente = Cliente::create($request->validated());
+        $cliente = $this->clienteService->create($request->validated());
 
         return (new ClienteResource($cliente))
             ->response()

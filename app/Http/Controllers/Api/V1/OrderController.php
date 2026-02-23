@@ -13,9 +13,10 @@ use App\Services\OrderService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Illuminate\Http\Response;
 use OpenApi\Attributes as OA;
 
-#[OA\Tag(name: 'Orders', description: 'Gestao de pedidos gerados a partir de propostas aprovadas')]
+#[OA\Tag(name: 'Pedidos', description: 'Gestão de pedidos gerados a partir de propostas aprovadas')]
 class OrderController extends Controller
 {
     public function __construct(private readonly OrderService $service) {}
@@ -71,7 +72,7 @@ class OrderController extends Controller
 
         return OrderResource::make($order->load('proposta'))
             ->response()
-            ->setStatusCode(201);
+            ->setStatusCode(Response::HTTP_CREATED);
     }
 
     #[OA\Get(
@@ -100,7 +101,7 @@ class OrderController extends Controller
         ],
         responses: [
             new OA\Response(response: 200, description: 'Pedido cancelado',       content: new OA\JsonContent(ref: '#/components/schemas/OrderResource')),
-            new OA\Response(response: 422, description: 'Pedido nao pode ser cancelado no status atual'),
+            new OA\Response(response: 422, description: 'Pedido não pode ser cancelado no status atual'),
         ]
     )]
     public function cancel(Order $order): OrderResource

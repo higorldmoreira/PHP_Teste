@@ -74,10 +74,8 @@ class PropostaFactory extends Factory
 
     public function canceled(): static
     {
-        return $this->state(fn() => [
-            'status'     => PropostaStatusEnum::CANCELED->value,
-            'deleted_at' => now(), // proposta cancelada costuma ser soft-deleted também
-        ]);
+        return $this->state(fn () => ['status' => PropostaStatusEnum::CANCELED->value])
+            ->afterCreating(fn (Proposta $p) => $p->delete());
     }
 
     public function porOrigem(PropostaOrigemEnum $origem): static

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Models;
 
 use App\Enums\OrderStatus;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -33,8 +34,12 @@ class Order extends Model
         return $this->belongsTo(Proposta::class);
     }
 
-    public function scopePorStatus($query, OrderStatus $status): void
+    /**
+     * @param  Builder<Order>  $query
+     * @return Builder<Order>
+     */
+    public function scopePorStatus(Builder $query, OrderStatus $status): Builder
     {
-        $query->where('status', $status->value);
+        return $query->where('status', $status->value);
     }
 }

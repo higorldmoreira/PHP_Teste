@@ -8,6 +8,7 @@ use App\Enums\PropostaStatusEnum;
 use App\Exceptions\BusinessException;
 use App\Exceptions\ConcurrencyException;
 use App\Models\Proposta;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -26,6 +27,40 @@ use Illuminate\Support\Facades\DB;
  */
 class PropostaService
 {
+
+    /**
+     * Pesquisa propostas aplicando filtros opcionais, ordenação e paginação.
+     *
+     * @param  array<string, mixed>  $filters  Aceita 'status', 'cliente_id', 'sort', 'direction', 'per_page'.
+     */
+    public function search(array $filters, int $perPage = 15): LengthAwarePaginator
+    {
+        $query = Proposta::with('cliente');
+
+        if ($status = $filters['status'] ?? null) {
+            $query->where('status', $status);
+        }
+
+        if ($clienteId = $filters['cliente_id'] ?? null) {
+            $query->where('cliente_id', (int) $clienteId);
+        }
+
+        /** @var string $sortField */
+        $sortField = $filters['sort'] ?? 'created_at';
+        $sortDirection = ($filters['direction'] ?? 'desc') === 'asc' ? 'asc' : 'desc';
+
+        // Allowlist de campos ordenáveis para evitar injeção via query string
+        $allowedSorts = ['created_at', 'updated_at', 'valor_mensal', 'status', 'versao'];
+        if (! in_array($sortField, $allowedSorts, strict: true)) {
+            $sortField = 'created_at';
+        }
+
+        $query->orderBy($sortField, $sortDirection);
+
+        $perPage = min($perPage, 100);
+
+        return $query->paginate($perPage);
+    }
 
     /**
      * Cria uma nova proposta forçando status DRAFT e versão 1,
@@ -77,7 +112,7 @@ class PropostaService
             $versaoEnviada = (int) ($data['versao'] ?? -1);
 
             if ($versaoEnviada !== $proposta->versao) {
-                throw ConcurrencyException::versaoDesatualizada();
+                throw ConcurrencyException::staleVersion();
             }
 
             // Remove 'versao' e campos imutáveis de $data para não sobrescrever

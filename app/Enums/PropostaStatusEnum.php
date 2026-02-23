@@ -36,14 +36,14 @@ enum PropostaStatusEnum: string
         ], strict: true);
     }
 
-    /** Retorna true se a proposta ainda pode ser editada. */
-    public function isEditavel(): bool
+    /** Retorna true se a proposta ainda pode ser editada (apenas DRAFT). */
+    public function isEditable(): bool
     {
         return $this === self::DRAFT;
     }
 
-    /** Retorna true se a proposta pode ser cancelada. */
-    public function isCancelavel(): bool
+    /** Retorna true se a proposta pode ser cancelada (DRAFT ou SUBMITTED). */
+    public function isCancelable(): bool
     {
         return in_array($this, [
             self::DRAFT,

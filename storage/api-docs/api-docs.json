@@ -262,7 +262,7 @@
                         }
                     },
                     "422": {
-                        "description": "Pedido nao pode ser cancelado no status atual"
+                        "description": "Pedido não pode ser cancelado no status atual"
                     }
                 }
             }
@@ -820,7 +820,7 @@
                             "rejected",
                             "shipped",
                             "delivered",
-                            "cancelled"
+                            "canceled"
                         ],
                         "example": "pending"
                     },
@@ -903,12 +903,12 @@
             "description": "Gestão de clientes"
         },
         {
-            "name": "Orders",
-            "description": "Gestao de pedidos gerados a partir de propostas aprovadas"
-        },
-        {
             "name": "Propostas",
             "description": "Gestão de propostas com máquina de estados, optimistic lock e auditoria"
+        },
+        {
+            "name": "Orders",
+            "description": "Orders"
         }
     ]
 }

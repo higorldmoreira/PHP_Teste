@@ -41,11 +41,11 @@ class ConcurrencyException extends RuntimeException
     }
 
     /**
-     * Factory estático para leitura fluente no Service.
+     * Factory para leitura fluente no Service.
      *
-     * Exemplo: throw ConcurrencyException::versaoDesatualizada();
+     * Exemplo: throw ConcurrencyException::staleVersion();
      */
-    public static function versaoDesatualizada(): static
+    public static function staleVersion(): static
     {
         return new static(
             'A versão da proposta foi alterada por outro usuário. Recarregue o registro e tente novamente.'

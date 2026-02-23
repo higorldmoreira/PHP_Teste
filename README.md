@@ -1,222 +1,19 @@
-# PHP Teste — API de Propostas
+# PHP Teste — Laravel 12 REST API
 
-API REST desenvolvida em **Laravel 12** como teste técnico PHP. Implementa gestão de clientes, propostas financeiras e pedidos com **máquina de estados**, **optimistic locking**, **idempotência**, **auditoria automática** e documentação interativa (Swagger / OpenAPI 3.0).
-
----
-
-## Tecnologias
-
-| Camada | Tecnologia |
-|---|---|
-| Framework | Laravel 12 / PHP 8.2+ |
-| Banco de dados | MySQL 8.0 |
-| Cache / Filas | Redis 7 |
-| Documentação | L5-Swagger / OpenAPI 3.0 |
-| Testes | PHPUnit — SQLite in-memory |
-| Infraestrutura | Docker / Docker Compose |
+API RESTful construída em **Laravel 12 / PHP 8.2** sem autenticação, com foco em Clean Code, SOLID e boas práticas de engenharia de software.
 
 ---
 
-## Requisitos
+## Stack
 
-- Docker e Docker Compose instalados
-- Portas `8050` (app), `3306` (MySQL) e `6379` (Redis) livres
-
----
-
-## Instalação
-
-```bash
-# 1. Clone o repositório
-git clone https://github.com/higorldmoreira/PHP_Teste.git
-cd PHP_Teste
-
-# 2. Copie o arquivo de ambiente
-cp .env.example .env
-
-# 3. Suba os containers
-docker compose up -d
-
-# 4. Instale as dependências
-docker exec php_teste-laravel.test-1 composer install
-
-# 5. Gere a chave da aplicação
-docker exec php_teste-laravel.test-1 php artisan key:generate
-
-# 6. Execute as migrations e seeders
-docker exec php_teste-laravel.test-1 php artisan migrate --seed
-```
-
-A API ficará disponível em `http://localhost:8050/api/v1`.
-
----
-
-## Documentação Swagger
-
-Acesse a UI interativa em:
-
-```
-http://localhost:8050/api/documentation
-```
-
-Para regenerar o JSON da documentação:
-
-```bash
-docker exec php_teste-laravel.test-1 php artisan l5-swagger:generate
-```
-
----
-
-## Endpoints
-
-### Clientes
-
-| Método | Rota | Descrição | Idempotência |
-|---|---|---|---|
-| `POST` | `/api/v1/clientes` | Cria um novo cliente | ✓ |
-| `GET` | `/api/v1/clientes/{id}` | Detalha um cliente | — |
-
-### Propostas
-
-| Método | Rota | Descrição | Idempotência |
-|---|---|---|---|
-| `GET` | `/api/v1/propostas` | Lista propostas (filtros + paginação) | — |
-| `POST` | `/api/v1/propostas` | Cria proposta (status inicial: DRAFT) | ✓ |
-| `GET` | `/api/v1/propostas/{id}` | Detalha uma proposta | — |
-| `PATCH` | `/api/v1/propostas/{id}` | Atualiza campos livres (optimistic lock) | — |
-| `POST` | `/api/v1/propostas/{id}/submit` | DRAFT → SUBMITTED | — |
-| `POST` | `/api/v1/propostas/{id}/approve` | SUBMITTED → APPROVED | — |
-| `POST` | `/api/v1/propostas/{id}/reject` | SUBMITTED → REJECTED | — |
-| `POST` | `/api/v1/propostas/{id}/cancel` | DRAFT / SUBMITTED → CANCELED | — |
-| `GET` | `/api/v1/propostas/{id}/auditoria` | Histórico de auditoria da proposta | — |
-
-### Pedidos (Orders)
-
-| Método | Rota | Descrição |
-|---|---|---|
-| `GET` | `/api/v1/orders` | Lista pedidos (filtro por status + paginação) |
-| `POST` | `/api/v1/propostas/{id}/orders` | Cria pedido a partir de proposta APPROVED |
-| `GET` | `/api/v1/orders/{id}` | Detalha um pedido |
-| `POST` | `/api/v1/orders/{id}/cancel` | Cancela um pedido pendente |
-
----
-
-## Máquina de estados — Proposta
-
-```
-                  ┌─────────────┐
-             ┌───►│  SUBMITTED  ├───► APPROVED  ──► (terminal)
-             │    └──────┬──────┘
- DRAFT ──────┤           └────────────► REJECTED ──► (terminal)
-             │
-             └──────────────────────────────────────► CANCELED ──► (terminal)
-```
-
-Qualquer estado não-terminal pode ir para **CANCELED**.
-
----
-
-## Máquina de estados — Order (Pedido)
-
-```
-PENDING ──► APPROVED ──► SHIPPED ──► DELIVERED  (terminal)
-    │
-    └──────────────────────────────► CANCELLED   (terminal)
-    └──────────────────────────────► REJECTED     (terminal)
-```
-
-Apenas pedidos em estado **PENDING** podem ser cancelados via API.
-
----
-
-## Idempotência
-
-Endpoints marcados com **Idempotência ✓** aceitam o header:
-
-```
-Idempotency-Key: <uuid-v4>
-```
-
-Respostas com status 2xx ficam em cache por **24 horas**. Requisições repetidas retornam a mesma resposta com o header `X-Idempotency-Replayed: true`.
-
----
-
-## Optimistic Locking
-
-Ao atualizar uma proposta via `PATCH /api/v1/propostas/{id}`, o corpo deve incluir o campo `versao` com o valor atual do registro:
-
-```json
-{
-  "versao": 3,
-  "produto": "Crédito Pessoal",
-  "valor_mensal": 1500.00
-}
-```
-
-Se o valor de `versao` estiver desatualizado, a API retorna `HTTP 409 Conflict`.
-
----
-
-## Auditoria Automática
-
-Toda alteração em uma `Proposta` é registrada automaticamente via `PropostaObserver`. Eventos capturados:
-
-| Evento | Gatilho |
-|---|---|
-| `created` | Criação da proposta |
-| `updated_fields` | Atualização de campos livres |
-| `status_changed` | Transição de status |
-| `deleted_logical` | Exclusão lógica |
-
-Consulta: `GET /api/v1/propostas/{id}/auditoria` — retorna o histórico em ordem decrescente.
-
----
-
-## Filtros e Paginação
-
-`GET /api/v1/propostas` aceita os seguintes query params:
-
-| Parâmetro | Tipo | Descrição | Padrão |
-|---|---|---|---|
-| `status` | string | `draft`, `submitted`, `approved`, `rejected`, `canceled` | — |
-| `cliente_id` | integer | Filtra por cliente | — |
-| `sort` | string | Campo de ordenação | `created_at` |
-| `direction` | string | `asc` / `desc` | `desc` |
-| `per_page` | integer | Itens por página (máx. 100) | `15` |
-
-`GET /api/v1/orders` aceita:
-
-| Parâmetro | Tipo | Descrição |
-|---|---|---|
-| `status` | string | Filtra por status do pedido |
-| `per_page` | integer | Itens por página (máx. 100) |
-
----
-
-## Executando os testes
-
-Os testes utilizam **SQLite in-memory** e rodam dentro do container:
-
-```bash
-docker exec php_teste-laravel.test-1 php artisan test
-```
-
-**Resultado esperado:**
-
-```
-Tests: 21 passed (117 assertions)
-```
-
-| Suite | Arquivo | Testes |
-|---|---|---|
-| Orders | `tests/Feature/OrderTest.php` | 6 |
-| Transições de status | `tests/Feature/PropostaStatusTransitionTest.php` | 5 |
-| Busca de propostas | `tests/Feature/PropostaSearchTest.php` | 3 |
-| Idempotência | `tests/Feature/IdempotencyTest.php` | 2 |
-| Optimistic Lock | `tests/Feature/OptimisticLockTest.php` | 2 |
-| Auditoria | `tests/Feature/AuditoriaTest.php` | 1 |
-| Exemplo (Feature) | `tests/Feature/ExampleTest.php` | 1 |
-| Exemplo (Unit) | `tests/Unit/ExampleTest.php` | 1 |
+| Componente | Versão |
+|------------|--------|
+| PHP        | 8.2    |
+| Laravel    | 12.x   |
+| Banco (prod) | MySQL  |
+| Banco (testes) | SQLite :memory: |
+| Documentação | L5-Swagger (OpenAPI 3.0) |
+| Docker     | Sail   |
 
 ---
 
@@ -224,21 +21,184 @@ Tests: 21 passed (117 assertions)
 
 ```
 app/
-├── Enums/           # Backed enums do domínio (PropostaStatusEnum, OrderStatus, …)
-├── Exceptions/      # BusinessException (422) e ConcurrencyException (409)
+├── Enums/
+│   ├── OrderStatus.php           # PENDING, APPROVED, REJECTED, SHIPPED, DELIVERED, CANCELED
+│   ├── PropostaStatusEnum.php    # DRAFT, SUBMITTED, APPROVED, REJECTED, CANCELED
+│   ├── PropostaOrigemEnum.php    # app, site, api
+│   └── AuditoriaEventoEnum.php   # created, status_changed, updated
+├── Exceptions/
+│   ├── BusinessException.php     # HTTP 422 — regra de negócio violada
+│   └── ConcurrencyException.php  # HTTP 409 — Optimistic Lock
 ├── Http/
-│   ├── Controllers/ # Api/V1 — controllers finos, delegam para Services
-│   ├── Middleware/  # IdempotencyMiddleware
-│   ├── Requests/    # Form Requests (validação + autorização)
-│   └── Resources/   # API Resources (transformação de saída)
-├── Models/          # Eloquent models com casts, scopes e relacionamentos
-├── Observers/       # PropostaObserver — auditoria automática via Eloquent events
-├── Providers/       # AppServiceProvider — bindings de serviços
-└── Services/        # Camada de negócio (PropostaService, OrderService)
+│   ├── Controllers/Api/V1/       # ClienteController, PropostaController, OrderController
+│   ├── Requests/                 # StoreClienteRequest, StorePropostaRequest, ...
+│   └── Resources/                # ClienteResource, PropostaResource, OrderResource, ...
+├── Models/
+│   ├── Cliente.php
+│   ├── Proposta.php              # SoftDeletes + PropostaObserver
+│   ├── Order.php                 # scopePorStatus()
+│   └── AuditoriaProposta.php
+├── Observers/
+│   └── PropostaObserver.php      # Auditoria automática via Eloquent events
+├── Providers/
+│   └── AppServiceProvider.php    # Singletons: ClienteService, PropostaService, OrderService
+└── Services/
+    ├── ClienteService.php        # create(array): Cliente
+    ├── PropostaService.php       # create, update, search, submit, approve, reject, cancel
+    └── OrderService.php          # placeOrder, cancel, paginate
+```
+
+### Padrões aplicados
+
+- **Service Layer** — toda lógica de negócio fora dos controllers
+- **Optimistic Locking** — campo `versao` incrementado a cada escrita; conflito → HTTP 409
+- **Máquina de estados** — transições validadas em `PropostaService` e `OrderService`
+- **Soft Deletes** — propostas canceladas usam `deleted_at`
+- **Auditoria automática** — `PropostaObserver` registra `created` e `status_changed`
+- **Idempotência** — header `Idempotency-Key` (UUID) em POST de clientes e propostas
+- **Enums SCREAMING_SNAKE_CASE** — valores americanos, sem acentos, compatíveis com o banco
+
+---
+
+## Endpoints
+
+### Clientes
+
+| Método | URL                     | Descrição                  |
+|--------|-------------------------|----------------------------|
+| POST   | `/api/v1/clientes`      | Cria cliente (idempotente) |
+| GET    | `/api/v1/clientes/{id}` | Exibe cliente              |
+
+### Propostas
+
+| Método | URL                                    | Descrição                         |
+|--------|----------------------------------------|-----------------------------------|
+| GET    | `/api/v1/propostas`                    | Lista com filtros e paginação     |
+| POST   | `/api/v1/propostas`                    | Cria proposta DRAFT (idempotente) |
+| GET    | `/api/v1/propostas/{id}`               | Exibe proposta                    |
+| PATCH  | `/api/v1/propostas/{id}`               | Atualiza com Optimistic Lock      |
+| POST   | `/api/v1/propostas/{id}/submit`        | DRAFT → SUBMITTED                 |
+| POST   | `/api/v1/propostas/{id}/approve`       | SUBMITTED → APPROVED              |
+| POST   | `/api/v1/propostas/{id}/reject`        | SUBMITTED → REJECTED              |
+| POST   | `/api/v1/propostas/{id}/cancel`        | DRAFT|SUBMITTED → CANCELED        |
+| GET    | `/api/v1/propostas/{id}/auditoria`     | Histórico de auditoria            |
+
+**Parâmetros de filtro** (`GET /api/v1/propostas`):
+
+| Parâmetro    | Tipo    | Padrão       | Descrição                                                    |
+|--------------|---------|--------------|--------------------------------------------------------------|
+| `status`     | string  | —            | `draft`, `submitted`, `approved`, `rejected`, `canceled`     |
+| `cliente_id` | integer | —            | Filtra por cliente                                           |
+| `sort`       | string  | `created_at` | Campo ordenável: `created_at`, `updated_at`, `valor_mensal`, `status`, `versao` |
+| `direction`  | string  | `desc`       | `asc` ou `desc`                                              |
+| `per_page`   | integer | `15`         | Máximo: 100                                                  |
+
+### Pedidos (Orders)
+
+| Método | URL                              | Descrição                                     |
+|--------|----------------------------------|-----------------------------------------------|
+| GET    | `/api/v1/orders`                 | Lista pedidos paginados (filtro `?status=`)   |
+| GET    | `/api/v1/orders/{id}`            | Exibe pedido                                  |
+| POST   | `/api/v1/propostas/{id}/orders`  | Cria pedido a partir de proposta APPROVED     |
+| POST   | `/api/v1/orders/{id}/cancel`     | Cancela pedido PENDING                        |
+
+---
+
+## Máquinas de Estado
+
+### Proposta
+
+```
+DRAFT ──submit──► SUBMITTED ──approve──► APPROVED (terminal)
+  │                   │
+  └──cancel──►        ├──reject──► REJECTED (terminal)
+       ▼              └──cancel──►
+  CANCELED (terminal)
+```
+
+### Order
+
+```
+PENDING ──► APPROVED ──► SHIPPED ──► DELIVERED (terminal)
+PENDING ──cancel──► CANCELED (terminal)
+                         REJECTED (terminal)
 ```
 
 ---
 
-## Autor
+## Executando o projeto
 
-**Higor Moreira** — [github.com/higorldmoreira](https://github.com/higorldmoreira)
+```bash
+# Subir containers
+./vendor/bin/sail up -d
+
+# Migrations + seed
+./vendor/bin/sail artisan migrate:fresh --seed
+
+# Testes
+./vendor/bin/sail artisan test
+```
+
+> URL padrão (desenvolvimento): `http://localhost:8050`
+
+---
+
+## Documentação Swagger
+
+Disponível em: [`http://localhost:8050/api/documentation`](http://localhost:8050/api/documentation)
+
+Geração automática via `L5_SWAGGER_GENERATE_ALWAYS=true` (`.env`).
+
+---
+
+## Testes
+
+**62 testes — 211 assertions — todos passando.**
+
+### Suíte
+
+| Arquivo                        | Tipo    | Testes |
+|--------------------------------|---------|--------|
+| `OrderStatusTest`              | Unit    | 5      |
+| `PropostaStatusEnumTest`       | Unit    | 10     |
+| `OrderServiceTest`             | Unit    | 8      |
+| `PropostaServiceTest`          | Unit    | 13     |
+| `AuditoriaTest`                | Feature | 1      |
+| `IdempotencyTest`              | Feature | 2      |
+| `OptimisticLockTest`           | Feature | 2      |
+| `OrderTest`                    | Feature | 8      |
+| `PropostaSearchTest`           | Feature | 5      |
+| `PropostaStatusTransitionTest` | Feature | 8      |
+
+### Cobertura
+
+- **Unit/Enum** — `isCancellable()`, `isTerminal()`, `isEditable()`, `isCancelable()`, `label()`, `values()` para cada case
+- **Unit/Service** — todas as transições válidas e inválidas, lock otimista, duplicata de pedido
+- **Feature/Status** — máquina de estados completa (DRAFT→SUBMITTED→APPROVED/REJECTED/CANCELED)
+- **Feature/Search** — filtro por status, filtro por cliente, paginação, ordenação por campo, sort inválido
+- **Feature/Orders** — criação, listagem, exibição, filtro por status, cancelamento, duplicata
+- **Feature/Auditoria** — registro automático de `created` e `status_changed`
+- **Feature/Idempotency** — cache por `Idempotency-Key`, header `X-Idempotency-Replayed`
+- **Feature/OptimisticLock** — versão correta → 200, versão desatualizada → 409
+
+---
+
+## Seeders
+
+| Seeder          | Dados gerados                                                          |
+|-----------------|------------------------------------------------------------------------|
+| `ClienteSeeder` | 50 clientes, cada um com 1–5 propostas aleatórias                      |
+| `PropostaSeeder`| 1 proposta em cada estado por cliente (amostra de 10)                  |
+| `OrderSeeder`   | 1 pedido por proposta APPROVED, distribuídos em PENDING/APPROVED/CANCELED |
+
+---
+
+## Variáveis de ambiente relevantes
+
+```dotenv
+APP_URL=http://localhost:8050
+DB_CONNECTION=mysql
+DB_DATABASE=laravel
+L5_SWAGGER_GENERATE_ALWAYS=true
+CACHE_DRIVER=redis   # array em testes (override automático no TestCase)
+```

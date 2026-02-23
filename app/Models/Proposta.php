@@ -29,6 +29,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  *
  * @property-read Cliente                                                        $cliente
  * @property-read \Illuminate\Database\Eloquent\Collection<int, AuditoriaProposta> $auditorias
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, Order>            $orders
  */
 #[ObservedBy(PropostaObserver::class)]
 class Proposta extends Model
@@ -83,6 +84,16 @@ class Proposta extends Model
     }
 
     /**
+     * Pedidos gerados a partir desta proposta.
+     *
+     * @return HasMany<Order>
+     */
+    public function orders(): HasMany
+    {
+        return $this->hasMany(Order::class);
+    }
+
+    /**
      * Filtra propostas por status.
      *
      * Uso: Proposta::porStatus(PropostaStatusEnum::APPROVED)->get()
@@ -106,14 +117,4 @@ class Proposta extends Model
         return $query->where('origem', $origem->value);
     }
 
-    /**
-     * Incrementa a versão da proposta.
-     * Deve ser chamado dentro de uma transação pelo PropostaService.
-     */
-    public function incrementarVersao(): static
-    {
-        $this->increment('versao');
-
-        return $this;
-    }
 }

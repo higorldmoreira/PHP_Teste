@@ -35,7 +35,7 @@ class OrderService
             return Order::create([
                 ...$data,
                 'proposta_id' => $proposta->id,
-                'status'      => OrderStatus::Pending->value,
+                'status'      => OrderStatus::PENDING->value,
                 'valor_total' => $proposta->valor_mensal,
             ]);
         });
@@ -50,13 +50,13 @@ class OrderService
     {
         if (! $order->status->isCancellable()) {
             throw BusinessException::because(
-                "Pedido nao pode ser cancelado no status '{$order->status->label()}'.",
+                "Pedido não pode ser cancelado no status '{$order->status->label()}'.",
                 ['order_id' => $order->id, 'status' => $order->status->value],
             );
         }
 
         return DB::transaction(static function () use ($order): Order {
-            $order->update(['status' => OrderStatus::Cancelled->value]);
+            $order->update(['status' => OrderStatus::CANCELED->value]);
             return $order->refresh();
         });
     }
@@ -76,7 +76,7 @@ class OrderService
     }
 
     /**
-     * Garante que a proposta nao possui pedido ativo (nao cancelado).
+     * Garante que a proposta não possui pedido ativo (não cancelado).
      *
      * @throws BusinessException
      */
@@ -84,12 +84,12 @@ class OrderService
     {
         $exists = Order::query()
             ->where('proposta_id', $proposta->id)
-            ->whereNot('status', OrderStatus::Cancelled->value)
+            ->whereNot('status', OrderStatus::CANCELED->value)
             ->exists();
 
         if ($exists) {
             throw BusinessException::because(
-                "A proposta #{$proposta->id} ja possui um pedido ativo.",
+                "A proposta #{$proposta->id} já possui um pedido ativo.",
                 ['proposta_id' => $proposta->id],
             );
         }

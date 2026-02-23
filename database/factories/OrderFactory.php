@@ -17,7 +17,7 @@ class OrderFactory extends Factory
     {
         return [
             'proposta_id' => Proposta::factory(),
-            'status'      => OrderStatus::Pending->value,
+            'status'      => OrderStatus::PENDING->value,
             'valor_total' => fake()->randomFloat(2, 100, 5000),
             'observacoes' => null,
         ];
@@ -25,21 +25,31 @@ class OrderFactory extends Factory
 
     public function pending(): static
     {
-        return $this->state(['status' => OrderStatus::Pending->value]);
+        return $this->state(['status' => OrderStatus::PENDING->value]);
     }
 
     public function approved(): static
     {
-        return $this->state(['status' => OrderStatus::Approved->value]);
+        return $this->state(['status' => OrderStatus::APPROVED->value]);
     }
 
-    public function cancelled(): static
+    public function rejected(): static
     {
-        return $this->state(['status' => OrderStatus::Cancelled->value]);
+        return $this->state(['status' => OrderStatus::REJECTED->value]);
+    }
+
+    public function shipped(): static
+    {
+        return $this->state(['status' => OrderStatus::SHIPPED->value]);
     }
 
     public function delivered(): static
     {
-        return $this->state(['status' => OrderStatus::Delivered->value]);
+        return $this->state(['status' => OrderStatus::DELIVERED->value]);
+    }
+
+    public function canceled(): static
+    {
+        return $this->state(['status' => OrderStatus::CANCELED->value]);
     }
 }
