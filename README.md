@@ -128,18 +128,75 @@ PENDING ──cancel──► CANCELED (terminal)
 
 ## Executando o projeto
 
+### Pré-requisitos
+
+- [Docker Desktop](https://www.docker.com/products/docker-desktop/) instalado e em execução
+
+> **Windows:** o Laravel Sail exige **WSL2 com uma distro Linux** (ex.: Ubuntu).  
+> Sem isso, o comando `./vendor/bin/sail` falha com `execvpe(/bin/bash) failed`.
+
+---
+
+### 1. Configurar WSL2 (somente Windows)
+
+Abra o **PowerShell como Administrador** e execute:
+
+```powershell
+wsl --install -d Ubuntu
+```
+
+Reinicie o computador quando solicitado. Após reiniciar, o Ubuntu será configurado automaticamente.
+
+Abra o Docker Desktop → **Settings → Resources → WSL Integration** → habilite a integração com a distro Ubuntu instalada.
+
+---
+
+### 2. Clonar e configurar
+
+> **Windows:** execute os próximos passos dentro do terminal **WSL2/Ubuntu**, não no PowerShell.
+
 ```bash
-# Subir containers
+# Clonar o repositório (dentro do WSL2 no Windows, ou terminal normal no Linux/macOS)
+git clone https://github.com/higorldmoreira/Gestor_Propostas.git
+cd Gestor_Propostas
+
+# Instalar dependências PHP
+composer install
+
+# Copiar o arquivo de variáveis de ambiente
+cp .env.example .env
+
+# Gerar a chave da aplicação
+php artisan key:generate
+```
+
+---
+
+### 3. Subir os containers
+
+```bash
 ./vendor/bin/sail up -d
+```
 
-# Migrations + seed
+---
+
+### 4. Migrations + Seed
+
+```bash
 ./vendor/bin/sail artisan migrate:fresh --seed
+```
 
-# Testes
+---
+
+### 5. Testes
+
+```bash
 ./vendor/bin/sail artisan test
 ```
 
-> URL padrão (desenvolvimento): `http://localhost:8050`
+---
+
+> **URL padrão (desenvolvimento):** `http://localhost:8050`
 
 ---
 
@@ -212,6 +269,7 @@ Ao exceder o limite: **HTTP 429 Too Many Requests**.
 
 ```dotenv
 APP_URL=http://localhost:8050
+APP_PORT=8050
 DB_CONNECTION=mysql
 DB_DATABASE=laravel
 L5_SWAGGER_GENERATE_ALWAYS=true
