@@ -14,12 +14,6 @@ class OptimisticLockTest extends TestCase
 {
     use RefreshDatabase;
 
-    protected function setUp(): void
-    {
-        parent::setUp();
-        $this->authAsUser();
-    }
-
     /**
      * Cria um par Cliente + Proposta em DRAFT com versão inicial 1.
      */

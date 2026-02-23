@@ -15,12 +15,6 @@ class AuditoriaTest extends TestCase
 {
     use RefreshDatabase;
 
-    protected function setUp(): void
-    {
-        parent::setUp();
-        $this->authAsUser();
-    }
-
     /**
      * Fluxo: criar proposta (1 log CREATED) → submeter (1 log STATUS_CHANGED)
      *

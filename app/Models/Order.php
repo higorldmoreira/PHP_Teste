@@ -14,7 +14,6 @@ class Order extends Model
     use HasFactory;
     protected $fillable = [
         'proposta_id',
-        'user_id',
         'status',
         'valor_total',
         'observacoes',
@@ -34,19 +33,8 @@ class Order extends Model
         return $this->belongsTo(Proposta::class);
     }
 
-    public function user(): BelongsTo
+    public function scopePorStatus($query, OrderStatus $status): void
     {
-        return $this->belongsTo(User::class);
-    }
-
-
-    public function scopePorStatus($query, OrderStatus $status)
-    {
-        return $query->where('status', $status->value);
-    }
-
-    public function scopePorUser($query, int $userId)
-    {
-        return $query->where('user_id', $userId);
+        $query->where('status', $status->value);
     }
 }

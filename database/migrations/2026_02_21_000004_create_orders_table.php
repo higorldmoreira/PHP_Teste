@@ -17,18 +17,12 @@ return new class extends Migration
                 ->constrained('propostas')
                 ->restrictOnDelete();
 
-            $table->foreignId('user_id')
-                ->constrained('users')
-                ->restrictOnDelete();
-
             $table->string('status', 30)->default('pending');
             $table->decimal('valor_total', 10, 2);
             $table->text('observacoes')->nullable();
             $table->timestamps();
 
             $table->index('status', 'idx_orders_status');
-            $table->index('user_id', 'idx_orders_user');
-            $table->index(['user_id', 'status'], 'idx_orders_user_status');
         });
     }
 

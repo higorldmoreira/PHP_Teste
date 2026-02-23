@@ -11,202 +11,11 @@
     },
     "servers": [
         {
-            "url": "/api/v1",
+            "url": "/",
             "description": "API v1"
         }
     ],
     "paths": {
-        "/api/v1/auth/register": {
-            "post": {
-                "tags": [
-                    "Auth"
-                ],
-                "summary": "Registra um novo usuário",
-                "description": "Registra um novo usuário e retorna o access token OAuth2.",
-                "operationId": "b9e746d77661fb8df55d0ac63e1ece77",
-                "requestBody": {
-                    "required": true,
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "required": [
-                                    "name",
-                                    "email",
-                                    "password",
-                                    "password_confirmation"
-                                ],
-                                "properties": {
-                                    "name": {
-                                        "type": "string",
-                                        "example": "João Silva"
-                                    },
-                                    "email": {
-                                        "type": "string",
-                                        "format": "email",
-                                        "example": "joao@example.com"
-                                    },
-                                    "password": {
-                                        "type": "string",
-                                        "format": "password",
-                                        "minLength": 8,
-                                        "example": "secret123"
-                                    },
-                                    "password_confirmation": {
-                                        "type": "string",
-                                        "format": "password",
-                                        "example": "secret123"
-                                    }
-                                },
-                                "type": "object"
-                            }
-                        }
-                    }
-                },
-                "responses": {
-                    "201": {
-                        "description": "Usuário criado com sucesso",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "properties": {
-                                        "access_token": {
-                                            "type": "string"
-                                        },
-                                        "token_type": {
-                                            "type": "string",
-                                            "example": "Bearer"
-                                        },
-                                        "user": {
-                                            "$ref": "#/components/schemas/UserResource"
-                                        }
-                                    },
-                                    "type": "object"
-                                }
-                            }
-                        }
-                    },
-                    "422": {
-                        "description": "Dados inválidos"
-                    }
-                }
-            }
-        },
-        "/api/v1/auth/login": {
-            "post": {
-                "tags": [
-                    "Auth"
-                ],
-                "summary": "Realiza login e retorna access token",
-                "description": "Autentica o usuário e retorna o access token OAuth2.",
-                "operationId": "a7997e7c1e3bfed64d4e56de82415931",
-                "requestBody": {
-                    "required": true,
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "required": [
-                                    "email",
-                                    "password"
-                                ],
-                                "properties": {
-                                    "email": {
-                                        "type": "string",
-                                        "format": "email",
-                                        "example": "joao@example.com"
-                                    },
-                                    "password": {
-                                        "type": "string",
-                                        "format": "password",
-                                        "example": "secret123"
-                                    }
-                                },
-                                "type": "object"
-                            }
-                        }
-                    }
-                },
-                "responses": {
-                    "200": {
-                        "description": "Login bem-sucedido",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "properties": {
-                                        "access_token": {
-                                            "type": "string"
-                                        },
-                                        "token_type": {
-                                            "type": "string",
-                                            "example": "Bearer"
-                                        },
-                                        "user": {
-                                            "$ref": "#/components/schemas/UserResource"
-                                        }
-                                    },
-                                    "type": "object"
-                                }
-                            }
-                        }
-                    },
-                    "401": {
-                        "description": "Credenciais inválidas"
-                    }
-                }
-            }
-        },
-        "/api/v1/auth/logout": {
-            "post": {
-                "tags": [
-                    "Auth"
-                ],
-                "summary": "Realiza logout revogando o token atual",
-                "description": "Revoga o token atual do usuário.",
-                "operationId": "f6b8957b4c0b25636613a9f0512a8ba9",
-                "responses": {
-                    "200": {
-                        "description": "Logout realizado com sucesso"
-                    },
-                    "401": {
-                        "description": "Não autenticado"
-                    }
-                },
-                "security": [
-                    {
-                        "bearerAuth": []
-                    }
-                ]
-            }
-        },
-        "/api/v1/auth/me": {
-            "get": {
-                "tags": [
-                    "Auth"
-                ],
-                "summary": "Retorna o usuário autenticado",
-                "description": "Retorna os dados do usuário autenticado.",
-                "operationId": "37d33f0281f67d31d05b4c45eea0143b",
-                "responses": {
-                    "200": {
-                        "description": "Dados do usuário",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/UserResource"
-                                }
-                            }
-                        }
-                    },
-                    "401": {
-                        "description": "Não autenticado"
-                    }
-                },
-                "security": [
-                    {
-                        "bearerAuth": []
-                    }
-                ]
-            }
-        },
         "/api/v1/clientes": {
             "post": {
                 "tags": [
@@ -266,18 +75,10 @@
                             }
                         }
                     },
-                    "401": {
-                        "description": "Não autenticado"
-                    },
                     "422": {
                         "description": "Dados inválidos"
                     }
-                },
-                "security": [
-                    {
-                        "bearerAuth": []
-                    }
-                ]
+                }
             }
         },
         "/api/v1/clientes/{cliente}": {
@@ -308,18 +109,10 @@
                             }
                         }
                     },
-                    "401": {
-                        "description": "Não autenticado"
-                    },
                     "404": {
                         "description": "Cliente não encontrado"
                     }
-                },
-                "security": [
-                    {
-                        "bearerAuth": []
-                    }
-                ]
+                }
             }
         },
         "/api/v1/orders": {
@@ -327,8 +120,7 @@
                 "tags": [
                     "Orders"
                 ],
-                "summary": "Lista pedidos do usuário autenticado",
-                "description": "Lista os pedidos do usuário autenticado, com filtro opcional por status.",
+                "summary": "Lista pedidos paginados",
                 "operationId": "00d3856d2d3d93124e0cc021d0cb5b79",
                 "parameters": [
                     {
@@ -352,16 +144,8 @@
                 "responses": {
                     "200": {
                         "description": "Lista paginada de pedidos"
-                    },
-                    "401": {
-                        "description": "Não autenticado"
                     }
-                },
-                "security": [
-                    {
-                        "bearerAuth": []
-                    }
-                ]
+                }
             }
         },
         "/api/v1/propostas/{proposta}/orders": {
@@ -370,7 +154,6 @@
                     "Orders"
                 ],
                 "summary": "Cria um pedido a partir de uma proposta aprovada",
-                "description": "Cria um pedido a partir de uma proposta APPROVED.",
                 "operationId": "6d037f518a3c5bc3c6b56ff85e4d4baf",
                 "parameters": [
                     {
@@ -410,18 +193,10 @@
                             }
                         }
                     },
-                    "401": {
-                        "description": "Não autenticado"
-                    },
                     "422": {
-                        "description": "Proposta não está aprovada ou já possui pedido ativo"
+                        "description": "Proposta nao aprovada ou ja possui pedido ativo"
                     }
-                },
-                "security": [
-                    {
-                        "bearerAuth": []
-                    }
-                ]
+                }
             }
         },
         "/api/v1/orders/{order}": {
@@ -430,7 +205,6 @@
                     "Orders"
                 ],
                 "summary": "Exibe um pedido",
-                "description": "Exibe um pedido específico do usuário autenticado.",
                 "operationId": "38713af501dbd66af5a66bd568a49bc2",
                 "parameters": [
                     {
@@ -453,21 +227,10 @@
                             }
                         }
                     },
-                    "401": {
-                        "description": "Não autenticado"
-                    },
-                    "403": {
-                        "description": "Sem permissão para visualizar este pedido"
-                    },
                     "404": {
-                        "description": "Pedido não encontrado"
+                        "description": "Pedido nao encontrado"
                     }
-                },
-                "security": [
-                    {
-                        "bearerAuth": []
-                    }
-                ]
+                }
             }
         },
         "/api/v1/orders/{order}/cancel": {
@@ -476,7 +239,6 @@
                     "Orders"
                 ],
                 "summary": "Cancela um pedido",
-                "description": "Cancela um pedido.",
                 "operationId": "aee443a742a80c8c038743d02cee6c66",
                 "parameters": [
                     {
@@ -499,21 +261,10 @@
                             }
                         }
                     },
-                    "401": {
-                        "description": "Não autenticado"
-                    },
-                    "403": {
-                        "description": "Sem permissão para cancelar este pedido"
-                    },
                     "422": {
-                        "description": "Pedido não pode ser cancelado no status atual"
+                        "description": "Pedido nao pode ser cancelado no status atual"
                     }
-                },
-                "security": [
-                    {
-                        "bearerAuth": []
-                    }
-                ]
+                }
             }
         },
         "/api/v1/propostas": {
@@ -582,16 +333,8 @@
                 "responses": {
                     "200": {
                         "description": "Lista paginada de propostas"
-                    },
-                    "401": {
-                        "description": "Não autenticado"
                     }
-                },
-                "security": [
-                    {
-                        "bearerAuth": []
-                    }
-                ]
+                }
             },
             "post": {
                 "tags": [
@@ -661,18 +404,10 @@
                             }
                         }
                     },
-                    "401": {
-                        "description": "Não autenticado"
-                    },
                     "422": {
                         "description": "Dados inválidos"
                     }
-                },
-                "security": [
-                    {
-                        "bearerAuth": []
-                    }
-                ]
+                }
             }
         },
         "/api/v1/propostas/{proposta}": {
@@ -703,18 +438,10 @@
                             }
                         }
                     },
-                    "401": {
-                        "description": "Não autenticado"
-                    },
                     "404": {
                         "description": "Não encontrada"
                     }
-                },
-                "security": [
-                    {
-                        "bearerAuth": []
-                    }
-                ]
+                }
             },
             "patch": {
                 "tags": [
@@ -770,9 +497,6 @@
                             }
                         }
                     },
-                    "401": {
-                        "description": "Não autenticado"
-                    },
                     "409": {
                         "description": "Conflito de versão",
                         "content": {
@@ -793,12 +517,7 @@
                             }
                         }
                     }
-                },
-                "security": [
-                    {
-                        "bearerAuth": []
-                    }
-                ]
+                }
             }
         },
         "/api/v1/propostas/{proposta}/submit": {
@@ -829,9 +548,6 @@
                             }
                         }
                     },
-                    "401": {
-                        "description": "Não autenticado"
-                    },
                     "422": {
                         "description": "Transição inválida",
                         "content": {
@@ -842,12 +558,7 @@
                             }
                         }
                     }
-                },
-                "security": [
-                    {
-                        "bearerAuth": []
-                    }
-                ]
+                }
             }
         },
         "/api/v1/propostas/{proposta}/approve": {
@@ -878,9 +589,6 @@
                             }
                         }
                     },
-                    "401": {
-                        "description": "Não autenticado"
-                    },
                     "422": {
                         "description": "Transição inválida",
                         "content": {
@@ -891,12 +599,7 @@
                             }
                         }
                     }
-                },
-                "security": [
-                    {
-                        "bearerAuth": []
-                    }
-                ]
+                }
             }
         },
         "/api/v1/propostas/{proposta}/reject": {
@@ -927,9 +630,6 @@
                             }
                         }
                     },
-                    "401": {
-                        "description": "Não autenticado"
-                    },
                     "422": {
                         "description": "Transição inválida",
                         "content": {
@@ -940,12 +640,7 @@
                             }
                         }
                     }
-                },
-                "security": [
-                    {
-                        "bearerAuth": []
-                    }
-                ]
+                }
             }
         },
         "/api/v1/propostas/{proposta}/cancel": {
@@ -976,9 +671,6 @@
                             }
                         }
                     },
-                    "401": {
-                        "description": "Não autenticado"
-                    },
                     "422": {
                         "description": "Transição inválida",
                         "content": {
@@ -989,12 +681,7 @@
                             }
                         }
                     }
-                },
-                "security": [
-                    {
-                        "bearerAuth": []
-                    }
-                ]
+                }
             }
         },
         "/api/v1/propostas/{proposta}/auditoria": {
@@ -1027,43 +714,17 @@
                                 }
                             }
                         }
-                    },
-                    "401": {
-                        "description": "Não autenticado"
                     }
-                },
-                "security": [
-                    {
-                        "bearerAuth": []
-                    }
-                ]
+                }
             }
         }
     },
     "components": {
         "schemas": {
-            "UserResource": {
-                "properties": {
-                    "id": {
-                        "description": "Controlador vazio que serve de âncora para as anotações globais do Swagger.",
-                        "type": "integer",
-                        "example": 1
-                    },
-                    "name": {
-                        "type": "string",
-                        "example": "João Silva"
-                    },
-                    "email": {
-                        "type": "string",
-                        "format": "email",
-                        "example": "joao@example.com"
-                    }
-                },
-                "type": "object"
-            },
             "ClienteResource": {
                 "properties": {
                     "id": {
+                        "description": "Controlador vazio que serve de âncora para as anotações globais do Swagger.",
                         "type": "integer",
                         "example": 1
                     },
@@ -1151,10 +812,6 @@
                         "type": "integer",
                         "example": 1
                     },
-                    "user_id": {
-                        "type": "integer",
-                        "example": 1
-                    },
                     "status": {
                         "type": "string",
                         "enum": [
@@ -1238,28 +895,16 @@
                 },
                 "type": "object"
             }
-        },
-        "securitySchemes": {
-            "bearerAuth": {
-                "type": "http",
-                "description": "Informe o access_token obtido em POST /auth/login",
-                "bearerFormat": "OAuth2 (Laravel Passport)",
-                "scheme": "bearer"
-            }
         }
     },
     "tags": [
-        {
-            "name": "Auth",
-            "description": "Registro, login e logout de usuários"
-        },
         {
             "name": "Clientes",
             "description": "Gestão de clientes"
         },
         {
             "name": "Orders",
-            "description": "Gestão de pedidos gerados a partir de propostas aprovadas"
+            "description": "Gestao de pedidos gerados a partir de propostas aprovadas"
         },
         {
             "name": "Propostas",

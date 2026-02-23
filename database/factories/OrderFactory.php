@@ -6,7 +6,6 @@ namespace Database\Factories;
 
 use App\Enums\OrderStatus;
 use App\Models\Proposta;
-use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
@@ -18,7 +17,6 @@ class OrderFactory extends Factory
     {
         return [
             'proposta_id' => Proposta::factory(),
-            'user_id'     => User::factory(),
             'status'      => OrderStatus::Pending->value,
             'valor_total' => fake()->randomFloat(2, 100, 5000),
             'observacoes' => null,

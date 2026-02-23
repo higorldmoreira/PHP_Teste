@@ -14,12 +14,6 @@ class PropostaSearchTest extends TestCase
 {
     use RefreshDatabase;
 
-    protected function setUp(): void
-    {
-        parent::setUp();
-        $this->authAsUser();
-    }
-
     // -------------------------------------------------------------------------
     // Teste 1 — Filtro por status
     // -------------------------------------------------------------------------

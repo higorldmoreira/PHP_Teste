@@ -8,13 +8,6 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Charset e collation explícitos garantem que esta tabela se comporte
-     * de forma idêntica em qualquer ambiente (local, staging, produção),
-     * independentemente do charset padrão configurado no servidor MySQL.
-     */
-    protected $connection = 'mysql';
-
     public function up(): void
     {
         Schema::create('clientes', function (Blueprint $table) {

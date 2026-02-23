@@ -20,14 +20,10 @@ class PropostaObserver
 {
     /**
      * Resolve o identificador do ator da operação.
-     * Usa o usuário autenticado quando disponível; caso contrário, 'system'
-     * (ex.: seeders, jobs em background, comandos Artisan).
      */
     private function actor(): string
     {
-        $id = auth()->id();
-
-        return $id !== null ? 'user:' . $id : 'system';
+        return 'system';
     }
 
     /**

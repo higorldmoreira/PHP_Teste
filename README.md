@@ -1,6 +1,6 @@
-# PHP Test — API Laravel 12
+# PHP Teste — API de Propostas
 
-REST API desenvolvida em **Laravel 12** como teste técnico PHP. Implementa gestão de clientes e propostas com máquina de estados, lock otimista, idempotência, auditoria automática, autenticação OAuth2 (Passport) e documentação interativa (Swagger).
+API REST desenvolvida em **Laravel 12** como teste técnico PHP. Implementa gestão de clientes, propostas financeiras e pedidos com **máquina de estados**, **optimistic locking**, **idempotência**, **auditoria automática** e documentação interativa (Swagger / OpenAPI 3.0).
 
 ---
 
@@ -11,7 +11,6 @@ REST API desenvolvida em **Laravel 12** como teste técnico PHP. Implementa gest
 | Framework | Laravel 12 / PHP 8.2+ |
 | Banco de dados | MySQL 8.0 |
 | Cache / Filas | Redis 7 |
-| Autenticação | Laravel Passport (OAuth2) |
 | Documentação | L5-Swagger / OpenAPI 3.0 |
 | Testes | PHPUnit — SQLite in-memory |
 | Infraestrutura | Docker / Docker Compose |
@@ -21,7 +20,7 @@ REST API desenvolvida em **Laravel 12** como teste técnico PHP. Implementa gest
 ## Requisitos
 
 - Docker e Docker Compose instalados
-- Portas `3306` (MySQL), `6379` (Redis) e `80` disponíveis
+- Portas `8050` (app), `3306` (MySQL) e `6379` (Redis) livres
 
 ---
 
@@ -30,41 +29,25 @@ REST API desenvolvida em **Laravel 12** como teste técnico PHP. Implementa gest
 ```bash
 # 1. Clone o repositório
 git clone https://github.com/higorldmoreira/PHP_Teste.git
-cd php-teste
+cd PHP_Teste
 
 # 2. Copie o arquivo de ambiente
 cp .env.example .env
 
 # 3. Suba os containers
-docker compose -f docker-compose.yml up -d
+docker compose up -d
 
-# 4. Instale as dependências dentro do container
-docker exec -it php_teste composer install
+# 4. Instale as dependências
+docker exec php_teste-laravel.test-1 composer install
 
 # 5. Gere a chave da aplicação
-docker exec -it php_teste php artisan key:generate
+docker exec php_teste-laravel.test-1 php artisan key:generate
 
 # 6. Execute as migrations e seeders
-docker exec -it php_teste php artisan migrate --seed
-
-# 7. Publique as chaves do Passport
-docker exec -it php_teste php artisan passport:keys --force
+docker exec php_teste-laravel.test-1 php artisan migrate --seed
 ```
 
-A API ficará disponível em `http://localhost/api/v1`.
-
----
-
-## Credenciais padrão
-
-Após executar `migrate --seed`, os seguintes dados estarão disponíveis:
-
-| Campo | Valor |
-|---|---|
-| E-mail | `admin@teste.com` |
-| Senha | `password` |
-
-Use o endpoint `POST /api/v1/auth/login` para obter o Bearer Token.
+A API ficará disponível em `http://localhost:8050/api/v1`.
 
 ---
 
@@ -73,112 +56,167 @@ Use o endpoint `POST /api/v1/auth/login` para obter o Bearer Token.
 Acesse a UI interativa em:
 
 ```
-http://localhost/api/documentation
+http://localhost:8050/api/documentation
 ```
 
-Para regenerar o JSON (`storage/api-docs/api-docs.json`):
+Para regenerar o JSON da documentação:
 
 ```bash
-php artisan l5-swagger:generate
+docker exec php_teste-laravel.test-1 php artisan l5-swagger:generate
 ```
 
 ---
 
 ## Endpoints
 
-### Autenticação
-
-| Método | Rota | Descrição | Auth |
-|---|---|---|---|
-| `POST` | `/api/v1/auth/register` | Cadastra novo usuário | — |
-| `POST` | `/api/v1/auth/login` | Obtém Bearer Token | — |
-| `POST` | `/api/v1/auth/logout` | Revoga o token atual | ✓ |
-| `GET` | `/api/v1/auth/me` | Dados do usuário autenticado | ✓ |
-
 ### Clientes
 
-| Método | Rota | Descrição | Auth | Idempotência |
-|---|---|---|---|---|
-| `POST` | `/api/v1/clientes` | Cria cliente | ✓ | ✓ |
-| `GET` | `/api/v1/clientes/{id}` | Detalha cliente | ✓ | — |
+| Método | Rota | Descrição | Idempotência |
+|---|---|---|---|
+| `POST` | `/api/v1/clientes` | Cria um novo cliente | ✓ |
+| `GET` | `/api/v1/clientes/{id}` | Detalha um cliente | — |
 
 ### Propostas
 
-| Método | Rota | Descrição | Auth | Idempotência |
-|---|---|---|---|---|
-| `GET` | `/api/v1/propostas` | Lista propostas (filtros + paginação) | ✓ | — |
-| `POST` | `/api/v1/propostas` | Cria proposta (DRAFT) | ✓ | ✓ |
-| `GET` | `/api/v1/propostas/{id}` | Detalha proposta | ✓ | — |
-| `PATCH` | `/api/v1/propostas/{id}` | Atualiza proposta (optimistic lock) | ✓ | — |
-| `POST` | `/api/v1/propostas/{id}/submit` | DRAFT → SUBMITTED | ✓ | — |
-| `POST` | `/api/v1/propostas/{id}/approve` | SUBMITTED → APPROVED | ✓ | — |
-| `POST` | `/api/v1/propostas/{id}/reject` | SUBMITTED → REJECTED | ✓ | — |
-| `POST` | `/api/v1/propostas/{id}/cancel` | DRAFT/SUBMITTED → CANCELED | ✓ | — |
-| `GET` | `/api/v1/propostas/{id}/auditoria` | Histórico de auditoria | ✓ | — |
-
-### Orders (Pedidos)
-
-| Método | Rota | Descrição | Auth |
+| Método | Rota | Descrição | Idempotência |
 |---|---|---|---|
-| `GET` | `/api/v1/orders` | Lista pedidos do usuário | ✓ |
-| `POST` | `/api/v1/propostas/{id}/orders` | Cria pedido a partir de proposta APPROVED | ✓ |
-| `GET` | `/api/v1/orders/{id}` | Detalha pedido | ✓ |
-| `POST` | `/api/v1/orders/{id}/cancel` | Cancela pedido | ✓ |
+| `GET` | `/api/v1/propostas` | Lista propostas (filtros + paginação) | — |
+| `POST` | `/api/v1/propostas` | Cria proposta (status inicial: DRAFT) | ✓ |
+| `GET` | `/api/v1/propostas/{id}` | Detalha uma proposta | — |
+| `PATCH` | `/api/v1/propostas/{id}` | Atualiza campos livres (optimistic lock) | — |
+| `POST` | `/api/v1/propostas/{id}/submit` | DRAFT → SUBMITTED | — |
+| `POST` | `/api/v1/propostas/{id}/approve` | SUBMITTED → APPROVED | — |
+| `POST` | `/api/v1/propostas/{id}/reject` | SUBMITTED → REJECTED | — |
+| `POST` | `/api/v1/propostas/{id}/cancel` | DRAFT / SUBMITTED → CANCELED | — |
+| `GET` | `/api/v1/propostas/{id}/auditoria` | Histórico de auditoria da proposta | — |
+
+### Pedidos (Orders)
+
+| Método | Rota | Descrição |
+|---|---|---|
+| `GET` | `/api/v1/orders` | Lista pedidos (filtro por status + paginação) |
+| `POST` | `/api/v1/propostas/{id}/orders` | Cria pedido a partir de proposta APPROVED |
+| `GET` | `/api/v1/orders/{id}` | Detalha um pedido |
+| `POST` | `/api/v1/orders/{id}/cancel` | Cancela um pedido pendente |
 
 ---
 
 ## Máquina de estados — Proposta
 
 ```
-                  ┌─────────┐
-             ┌───►│SUBMITTED├───► APPROVED ──► (terminal)
-             │    └────┬────┘
- DRAFT ──────┤         └──────────► REJECTED ──► (terminal)
+                  ┌─────────────┐
+             ┌───►│  SUBMITTED  ├───► APPROVED  ──► (terminal)
+             │    └──────┬──────┘
+ DRAFT ──────┤           └────────────► REJECTED ──► (terminal)
              │
-             └──────────────────────────────────► CANCELED ──► (terminal)
-
-Qualquer estado não-terminal pode ir para CANCELED.
+             └──────────────────────────────────────► CANCELED ──► (terminal)
 ```
+
+Qualquer estado não-terminal pode ir para **CANCELED**.
+
+---
+
+## Máquina de estados — Order (Pedido)
+
+```
+PENDING ──► APPROVED ──► SHIPPED ──► DELIVERED  (terminal)
+    │
+    └──────────────────────────────► CANCELLED   (terminal)
+    └──────────────────────────────► REJECTED     (terminal)
+```
+
+Apenas pedidos em estado **PENDING** podem ser cancelados via API.
 
 ---
 
 ## Idempotência
 
-Endpoints de mutação marcados com **Idempotência ✓** aceitam o header:
+Endpoints marcados com **Idempotência ✓** aceitam o header:
 
 ```
-Idempotency-Key: <uuid>
+Idempotency-Key: <uuid-v4>
 ```
 
-Respostas 2xx ficam em cache por **24 horas**. Replays retornam o header `X-Idempotency-Replayed: true`.
+Respostas com status 2xx ficam em cache por **24 horas**. Requisições repetidas retornam a mesma resposta com o header `X-Idempotency-Replayed: true`.
 
 ---
 
-## Optimistic Lock
+## Optimistic Locking
 
-Ao atualizar uma proposta via `PATCH`, a requisição deve enviar o campo `versao` com o valor atual do registro. Divergência retorna `HTTP 409 Conflict`.
+Ao atualizar uma proposta via `PATCH /api/v1/propostas/{id}`, o corpo deve incluir o campo `versao` com o valor atual do registro:
+
+```json
+{
+  "versao": 3,
+  "produto": "Crédito Pessoal",
+  "valor_mensal": 1500.00
+}
+```
+
+Se o valor de `versao` estiver desatualizado, a API retorna `HTTP 409 Conflict`.
+
+---
+
+## Auditoria Automática
+
+Toda alteração em uma `Proposta` é registrada automaticamente via `PropostaObserver`. Eventos capturados:
+
+| Evento | Gatilho |
+|---|---|
+| `created` | Criação da proposta |
+| `updated_fields` | Atualização de campos livres |
+| `status_changed` | Transição de status |
+| `deleted_logical` | Exclusão lógica |
+
+Consulta: `GET /api/v1/propostas/{id}/auditoria` — retorna o histórico em ordem decrescente.
+
+---
+
+## Filtros e Paginação
+
+`GET /api/v1/propostas` aceita os seguintes query params:
+
+| Parâmetro | Tipo | Descrição | Padrão |
+|---|---|---|---|
+| `status` | string | `draft`, `submitted`, `approved`, `rejected`, `canceled` | — |
+| `cliente_id` | integer | Filtra por cliente | — |
+| `sort` | string | Campo de ordenação | `created_at` |
+| `direction` | string | `asc` / `desc` | `desc` |
+| `per_page` | integer | Itens por página (máx. 100) | `15` |
+
+`GET /api/v1/orders` aceita:
+
+| Parâmetro | Tipo | Descrição |
+|---|---|---|
+| `status` | string | Filtra por status do pedido |
+| `per_page` | integer | Itens por página (máx. 100) |
 
 ---
 
 ## Executando os testes
 
-Os testes usam **SQLite in-memory** e não dependem do Docker.
+Os testes utilizam **SQLite in-memory** e rodam dentro do container:
 
 ```bash
-php artisan test
-# ou
-./vendor/bin/phpunit
+docker exec php_teste-laravel.test-1 php artisan test
 ```
 
-| Suite | Arquivo |
-|---|---|
-| Auth | `tests/Feature/AuthTest.php` |
-| Orders | `tests/Feature/OrderTest.php` |
-| Auditoria | `tests/Feature/AuditoriaTest.php` |
-| Idempotência | `tests/Feature/IdempotencyTest.php` |
-| Optimistic Lock | `tests/Feature/OptimisticLockTest.php` |
-| Busca de propostas | `tests/Feature/PropostaSearchTest.php` |
-| Transições de status | `tests/Feature/PropostaStatusTransitionTest.php` |
+**Resultado esperado:**
+
+```
+Tests: 21 passed (117 assertions)
+```
+
+| Suite | Arquivo | Testes |
+|---|---|---|
+| Orders | `tests/Feature/OrderTest.php` | 6 |
+| Transições de status | `tests/Feature/PropostaStatusTransitionTest.php` | 5 |
+| Busca de propostas | `tests/Feature/PropostaSearchTest.php` | 3 |
+| Idempotência | `tests/Feature/IdempotencyTest.php` | 2 |
+| Optimistic Lock | `tests/Feature/OptimisticLockTest.php` | 2 |
+| Auditoria | `tests/Feature/AuditoriaTest.php` | 1 |
+| Exemplo (Feature) | `tests/Feature/ExampleTest.php` | 1 |
+| Exemplo (Unit) | `tests/Unit/ExampleTest.php` | 1 |
 
 ---
 
@@ -186,15 +224,21 @@ php artisan test
 
 ```
 app/
-├── Enums/           # Backed enums do domínio (PropostaStatusEnum, OrderStatus…)
+├── Enums/           # Backed enums do domínio (PropostaStatusEnum, OrderStatus, …)
 ├── Exceptions/      # BusinessException (422) e ConcurrencyException (409)
 ├── Http/
-│   ├── Controllers/ # Api/V1 — thin controllers, delegam para Services
+│   ├── Controllers/ # Api/V1 — controllers finos, delegam para Services
 │   ├── Middleware/  # IdempotencyMiddleware
-│   ├── Requests/    # Form Requests com validação e autorização
+│   ├── Requests/    # Form Requests (validação + autorização)
 │   └── Resources/   # API Resources (transformação de saída)
 ├── Models/          # Eloquent models com casts, scopes e relacionamentos
 ├── Observers/       # PropostaObserver — auditoria automática via Eloquent events
-├── Providers/       # AppServiceProvider — bindings e configuração Passport
+├── Providers/       # AppServiceProvider — bindings de serviços
 └── Services/        # Camada de negócio (PropostaService, OrderService)
 ```
+
+---
+
+## Autor
+
+**Higor Moreira** — [github.com/higorldmoreira](https://github.com/higorldmoreira)

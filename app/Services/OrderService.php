@@ -9,71 +9,42 @@ use App\Enums\PropostaStatusEnum;
 use App\Exceptions\BusinessException;
 use App\Models\Order;
 use App\Models\Proposta;
-use App\Models\User;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
 
-/**
- * OrderService
- *
- * Gerencia o ciclo de vida de pedidos (Orders).
- * Um Order é gerado a partir de uma Proposta no status APPROVED.
- *
- * Regras de negócio:
- *  - Somente propostas APPROVED podem gerar um pedido.
- *  - Uma proposta só pode ter um pedido ativo (não cancelado) por vez.
- *  - Cancelamento só é permitido nos status: Pending, Approved.
- *
- * @extends BaseService<Order>
- */
-class OrderService extends BaseService
+class OrderService
 {
-    public function __construct(Order $order)
-    {
-        $this->model = $order;
-    }
-
-
     /**
      * Cria um pedido a partir de uma Proposta APPROVED.
      *
-     * @param  array<string, mixed>  $data  Campos adicionais (observacoes, etc.)
-     *
+     * @param  array<string, mixed>  $data
      * @throws BusinessException
-     * @throws \Throwable
      */
-    public function placeOrder(Proposta $proposta, User $user, array $data = []): Order
+    public function placeOrder(Proposta $proposta, array $data = []): Order
     {
         if ($proposta->status !== PropostaStatusEnum::APPROVED) {
             throw BusinessException::because(
-                "Somente propostas aprovadas podem gerar um pedido. "
-                . "Status atual: {$proposta->status->value}.",
+                "Somente propostas aprovadas podem gerar um pedido. Status atual: {$proposta->status->value}.",
                 ['proposta_id' => $proposta->id, 'status' => $proposta->status->value],
             );
         }
 
         $this->ensureNoActiveOrder($proposta);
 
-        return DB::transaction(function () use ($proposta, $user, $data): Order {
-            /** @var Order $order */
-            $order = $this->create([
+        return DB::transaction(static function () use ($proposta, $data): Order {
+            return Order::create([
                 ...$data,
                 'proposta_id' => $proposta->id,
-                'user_id'     => $user->id,
                 'status'      => OrderStatus::Pending->value,
                 'valor_total' => $proposta->valor_mensal,
             ]);
-
-            return $order;
         });
     }
-
 
     /**
      * Cancela um pedido se o status permitir.
      *
      * @throws BusinessException
-     * @throws \Throwable
      */
     public function cancel(Order $order): Order
     {
@@ -84,24 +55,18 @@ class OrderService extends BaseService
             );
         }
 
-        return DB::transaction(function () use ($order): Order {
+        return DB::transaction(static function () use ($order): Order {
             $order->update(['status' => OrderStatus::Cancelled->value]);
             return $order->refresh();
         });
     }
 
-
     /**
-     * Retorna pedidos paginados do usuario autenticado,
-     * com filtro opcional por status.
+     * Retorna pedidos paginados, com filtro opcional por status.
      */
-    public function paginatedForUser(User $user, ?string $status = null, int $perPage = 15): LengthAwarePaginator
+    public function paginate(?string $status = null, int $perPage = 15): LengthAwarePaginator
     {
-        $query = $this->model
-            ->newQuery()
-            ->with('proposta')
-            ->where('user_id', $user->id)
-            ->latest();
+        $query = Order::with('proposta')->latest();
 
         if ($status !== null) {
             $query->where('status', $status);
@@ -110,17 +75,14 @@ class OrderService extends BaseService
         return $query->paginate($perPage);
     }
 
-    // ── Guardas privadas ───────────────────────────────────────────────────────
-
     /**
-     * Garante que a proposta nao possui um pedido ativo (nao cancelado).
+     * Garante que a proposta nao possui pedido ativo (nao cancelado).
      *
      * @throws BusinessException
      */
     private function ensureNoActiveOrder(Proposta $proposta): void
     {
-        $exists = $this->model
-            ->newQuery()
+        $exists = Order::query()
             ->where('proposta_id', $proposta->id)
             ->whereNot('status', OrderStatus::Cancelled->value)
             ->exists();

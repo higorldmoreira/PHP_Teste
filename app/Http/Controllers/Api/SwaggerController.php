@@ -20,27 +20,12 @@ use OpenApi\Attributes as OA;
     ),
 )]
 #[OA\Server(
-    url: '/api/v1',
+    url: '/',
     description: 'API v1'
-)]
-#[OA\SecurityScheme(
-    securityScheme: 'bearerAuth',
-    type: 'http',
-    scheme: 'bearer',
-    bearerFormat: 'OAuth2 (Laravel Passport)',
-    description: 'Informe o access_token obtido em POST /auth/login'
 )]
 
 // ── Schemas reutilizáveis ─────────────────────────────────────────────────────
 
-#[OA\Schema(
-    schema: 'UserResource',
-    properties: [
-        new OA\Property(property: 'id', type: 'integer', example: 1),
-        new OA\Property(property: 'name', type: 'string', example: 'João Silva'),
-        new OA\Property(property: 'email', type: 'string', format: 'email', example: 'joao@example.com'),
-    ]
-)]
 #[OA\Schema(
     schema: 'ClienteResource',
     properties: [
@@ -70,7 +55,6 @@ use OpenApi\Attributes as OA;
     properties: [
         new OA\Property(property: 'id', type: 'integer', example: 1),
         new OA\Property(property: 'proposta_id', type: 'integer', example: 1),
-        new OA\Property(property: 'user_id', type: 'integer', example: 1),
         new OA\Property(property: 'status', type: 'string', enum: ['pending', 'approved', 'rejected', 'shipped', 'delivered', 'cancelled'], example: 'pending'),
         new OA\Property(property: 'status_label', type: 'string', example: 'Aguardando pagamento'),
         new OA\Property(property: 'valor_total', type: 'number', format: 'float', example: 1200.00),
