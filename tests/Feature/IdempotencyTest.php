@@ -15,6 +15,12 @@ class IdempotencyTest extends TestCase
 
     private const IDEMPOTENCY_KEY = 'test-idempotency-key-proposta-001';
 
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $this->authAsUser();
+    }
+
     /**
      * Payload válido para criação de proposta, reutilizado em ambos os testes.
      *

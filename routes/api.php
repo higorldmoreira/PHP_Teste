@@ -2,7 +2,9 @@
 
 declare(strict_types=1);
 
+use App\Http\Controllers\Api\V1\AuthController;
 use App\Http\Controllers\Api\V1\ClienteController;
+use App\Http\Controllers\Api\V1\OrderController;
 use App\Http\Controllers\Api\V1\PropostaController;
 use App\Http\Middleware\IdempotencyMiddleware;
 use Illuminate\Support\Facades\Route;
@@ -18,48 +20,75 @@ use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1')->group(function (): void {
 
-    // ── Clientes ──────────────────────────────────────────────────────────────
+    // ── Autenticação (rotas públicas) ─────────────────────────────────────────
 
-    Route::post('clientes', [ClienteController::class, 'store'])
-        ->middleware('idempotency')
-        ->name('clientes.store');
+    Route::prefix('auth')->name('auth.')->group(function (): void {
+        Route::post('register', [AuthController::class, 'register'])->name('register');
+        Route::post('login', [AuthController::class, 'login'])->name('login');
 
-    Route::get('clientes/{cliente}', [ClienteController::class, 'show'])
-        ->name('clientes.show');
+        Route::middleware('auth:api')->group(function (): void {
+            Route::post('logout', [AuthController::class, 'logout'])->name('logout');
+            Route::get('me', [AuthController::class, 'me'])->name('me');
+        });
+    });
 
-    // ── Propostas ─────────────────────────────────────────────────────────────
+    // ── Rotas protegidas por autenticação ─────────────────────────────────────
 
-    // Listagem e criação
-    Route::get('propostas', [PropostaController::class, 'index'])
-        ->name('propostas.index');
+    Route::middleware('auth:api')->group(function (): void {
 
-    Route::post('propostas', [PropostaController::class, 'store'])
-        ->middleware('idempotency')
-        ->name('propostas.store');
+        // ── Clientes ──────────────────────────────────────────────────────────
 
-    // Detalhe e atualização de campos livres
-    Route::get('propostas/{proposta}', [PropostaController::class, 'show'])
-        ->name('propostas.show');
+        Route::post('clientes', [ClienteController::class, 'store'])
+            ->middleware('idempotency')
+            ->name('clientes.store');
 
-    Route::patch('propostas/{proposta}', [PropostaController::class, 'update'])
-        ->name('propostas.update');
+        Route::get('clientes/{cliente}', [ClienteController::class, 'show'])
+            ->name('clientes.show');
 
-    // ── Transições de status ──────────────────────────────────────────────────
+        // ── Propostas ─────────────────────────────────────────────────────────
 
-    Route::post('propostas/{proposta}/submit', [PropostaController::class, 'submit'])
-        ->name('propostas.submit');
+        Route::get('propostas', [PropostaController::class, 'index'])
+            ->name('propostas.index');
 
-    Route::post('propostas/{proposta}/approve', [PropostaController::class, 'approve'])
-        ->name('propostas.approve');
+        Route::post('propostas', [PropostaController::class, 'store'])
+            ->middleware('idempotency')
+            ->name('propostas.store');
 
-    Route::post('propostas/{proposta}/reject', [PropostaController::class, 'reject'])
-        ->name('propostas.reject');
+        Route::get('propostas/{proposta}', [PropostaController::class, 'show'])
+            ->name('propostas.show');
 
-    Route::post('propostas/{proposta}/cancel', [PropostaController::class, 'cancel'])
-        ->name('propostas.cancel');
+        Route::patch('propostas/{proposta}', [PropostaController::class, 'update'])
+            ->name('propostas.update');
 
-    // ── Auditoria ─────────────────────────────────────────────────────────────
+        // Transições de status
+        Route::post('propostas/{proposta}/submit', [PropostaController::class, 'submit'])
+            ->name('propostas.submit');
 
-    Route::get('propostas/{proposta}/auditoria', [PropostaController::class, 'auditoria'])
-        ->name('propostas.auditoria');
+        Route::post('propostas/{proposta}/approve', [PropostaController::class, 'approve'])
+            ->name('propostas.approve');
+
+        Route::post('propostas/{proposta}/reject', [PropostaController::class, 'reject'])
+            ->name('propostas.reject');
+
+        Route::post('propostas/{proposta}/cancel', [PropostaController::class, 'cancel'])
+            ->name('propostas.cancel');
+
+        Route::get('propostas/{proposta}/auditoria', [PropostaController::class, 'auditoria'])
+            ->name('propostas.auditoria');
+
+        // ── Orders ────────────────────────────────────────────────────────────
+
+        Route::get('orders', [OrderController::class, 'index'])
+            ->name('orders.index');
+
+        Route::post('propostas/{proposta}/orders', [OrderController::class, 'store'])
+            ->name('orders.store');
+
+        Route::get('orders/{order}', [OrderController::class, 'show'])
+            ->name('orders.show');
+
+        Route::post('orders/{order}/cancel', [OrderController::class, 'cancel'])
+            ->name('orders.cancel');
+    });
 });
+

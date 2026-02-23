@@ -5,16 +5,24 @@ declare(strict_types=1);
 namespace App\Services;
 
 use App\Enums\OrderStatus;
+use App\Enums\PropostaStatusEnum;
 use App\Exceptions\BusinessException;
 use App\Models\Order;
-use Illuminate\Database\Eloquent\Collection;
+use App\Models\Proposta;
+use App\Models\User;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Facades\DB;
 
 /**
  * OrderService
  *
- * Exemplo de Service de domínio que estende BaseService.
- * Toda lógica de negócio relacionada a pedidos vive aqui,
- * mantendo o Controller enxuto (apenas orquestração HTTP).
+ * Gerencia o ciclo de vida de pedidos (Orders).
+ * Um Order é gerado a partir de uma Proposta no status APPROVED.
+ *
+ * Regras de negócio:
+ *  - Somente propostas APPROVED podem gerar um pedido.
+ *  - Uma proposta só pode ter um pedido ativo (não cancelado) por vez.
+ *  - Cancelamento só é permitido nos status: Pending, Approved.
  *
  * @extends BaseService<Order>
  */
@@ -25,86 +33,105 @@ class OrderService extends BaseService
         $this->model = $order;
     }
 
-    /**
-     * Cria um pedido garantindo que o usuário não tenha outro pendente.
-     *
-     * @param  array<string, mixed>  $data
-     */
-    public function placeOrder(int $userId, array $data): Order
-    {
-        $this->ensureNoPendingOrder($userId);
+    // ── Criação ────────────────────────────────────────────────────────────────
 
-        return $this->transaction(function () use ($userId, $data): Order {
+    /**
+     * Cria um pedido a partir de uma Proposta APPROVED.
+     *
+     * @param  array<string, mixed>  $data  Campos adicionais (observacoes, etc.)
+     *
+     * @throws BusinessException
+     * @throws \Throwable
+     */
+    public function placeOrder(Proposta $proposta, User $user, array $data = []): Order
+    {
+        if ($proposta->status !== PropostaStatusEnum::APPROVED) {
+            throw BusinessException::because(
+                "Somente propostas aprovadas podem gerar um pedido. "
+                . "Status atual: {$proposta->status->value}.",
+                ['proposta_id' => $proposta->id, 'status' => $proposta->status->value],
+            );
+        }
+
+        $this->ensureNoActiveOrder($proposta);
+
+        return DB::transaction(function () use ($proposta, $user, $data): Order {
             /** @var Order $order */
             $order = $this->create([
                 ...$data,
-                'user_id' => $userId,
-                'status'  => OrderStatus::Pending->value,
+                'proposta_id' => $proposta->id,
+                'user_id'     => $user->id,
+                'status'      => OrderStatus::Pending->value,
+                'valor_total' => $proposta->valor_mensal,
             ]);
-
-            // event(new OrderPlaced($order)); // dispare eventos aqui
 
             return $order;
         });
     }
 
+    // ── Cancelamento ───────────────────────────────────────────────────────────
+
     /**
      * Cancela um pedido se o status permitir.
      *
      * @throws BusinessException
+     * @throws \Throwable
      */
-    public function cancel(int $orderId): Order
+    public function cancel(Order $order): Order
     {
-        /** @var Order $order */
-        $order = $this->findOrFail($orderId);
-
-        $status = OrderStatus::from($order->status);
-
-        if (! $status->isCancellable()) {
+        if (! $order->status->isCancellable()) {
             throw BusinessException::because(
-                "Pedido não pode ser cancelado no status '{$status->label()}'.",
-                ['order_id' => $orderId, 'status' => $status->value],
+                "Pedido nao pode ser cancelado no status '{$order->status->label()}'.",
+                ['order_id' => $order->id, 'status' => $order->status->value],
             );
         }
 
-        $order->update(['status' => OrderStatus::Cancelled->value]);
-
-        return $order->refresh();
+        return DB::transaction(function () use ($order): Order {
+            $order->update(['status' => OrderStatus::Cancelled->value]);
+            return $order->refresh();
+        });
     }
 
+    // ── Consultas ──────────────────────────────────────────────────────────────
+
     /**
-     * Retorna todos os pedidos de um usuário.
-     *
-     * @return Collection<int, Order>
+     * Retorna pedidos paginados do usuario autenticado,
+     * com filtro opcional por status.
      */
-    public function forUser(int $userId): Collection
+    public function paginatedForUser(User $user, ?string $status = null, int $perPage = 15): LengthAwarePaginator
     {
-        return $this->model
+        $query = $this->model
             ->newQuery()
-            ->where('user_id', $userId)
-            ->latest()
-            ->get();
+            ->with('proposta')
+            ->where('user_id', $user->id)
+            ->latest();
+
+        if ($status !== null) {
+            $query->where('status', $status);
+        }
+
+        return $query->paginate($perPage);
     }
 
-    // -------------------------------------------------------------------------
-    // Regras de guarda privadas
-    // -------------------------------------------------------------------------
+    // ── Guardas privadas ───────────────────────────────────────────────────────
 
     /**
+     * Garante que a proposta nao possui um pedido ativo (nao cancelado).
+     *
      * @throws BusinessException
      */
-    private function ensureNoPendingOrder(int $userId): void
+    private function ensureNoActiveOrder(Proposta $proposta): void
     {
         $exists = $this->model
             ->newQuery()
-            ->where('user_id', $userId)
-            ->where('status', OrderStatus::Pending->value)
+            ->where('proposta_id', $proposta->id)
+            ->whereNot('status', OrderStatus::Cancelled->value)
             ->exists();
 
         if ($exists) {
             throw BusinessException::because(
-                'Usuário já possui um pedido pendente.',
-                ['user_id' => $userId],
+                "A proposta #{$proposta->id} ja possui um pedido ativo.",
+                ['proposta_id' => $proposta->id],
             );
         }
     }
