@@ -151,6 +151,21 @@ Geração automática via `L5_SWAGGER_GENERATE_ALWAYS=true` (`.env`).
 
 ---
 
+## Rate Limiting
+
+Aplicado via `RateLimiter` do Laravel (`AppServiceProvider`) + middleware `throttle` nas rotas.
+
+| Escopo | Limite | Aplicado em |
+|--------|--------|-------------|
+| `api` | 60 req/min por IP | Todas as rotas `v1/` |
+| `api-write` | 20 req/min por IP | `POST` e `PATCH` |
+
+Ao exceder o limite: **HTTP 429 Too Many Requests**.
+
+> Em testes, `CACHE_STORE=array` é usado, garantindo que o contador de rate limit seja reiniciado a cada request e os testes não recebam 429.
+
+---
+
 ## Testes
 
 **62 testes — 211 assertions — todos passando.**
