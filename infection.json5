@@ -1,0 +1,24 @@
+{
+    "$schema": "https://raw.githubusercontent.com/infection/infection/master/resources/infection.schema.json",
+    "source": {
+        "directories": [
+            "app/Services",
+            "app/Enums",
+            "app/Filters"
+        ],
+        "excludes": []
+    },
+    "testFramework": "phpunit",
+    "testFrameworkOptions": "--stop-on-failure",
+    "minMsi": 80,
+    "minCoveredMsi": 85,
+    "mutators": {
+        "@default": true
+    },
+    "logs": {
+        "text": "infection.log",
+        "html": "infection.html",
+        "summary": "infection-summary.log"
+    },
+    "tmpDir": "/tmp"
+}

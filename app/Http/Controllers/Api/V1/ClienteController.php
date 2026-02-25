@@ -7,6 +7,7 @@ namespace App\Http\Controllers\Api\V1;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreClienteRequest;
 use App\Http\Resources\ClienteResource;
+use App\DTOs\CriarClienteDTO;
 use App\Models\Cliente;
 use App\Services\ClienteService;
 use Illuminate\Http\JsonResponse;
@@ -42,7 +43,9 @@ class ClienteController extends Controller
     )]
     public function store(StoreClienteRequest $request): JsonResponse
     {
-        $cliente = $this->clienteService->create($request->validated());
+        $cliente = $this->clienteService->create(
+            CriarClienteDTO::fromArray($request->validated()),
+        );
 
         return (new ClienteResource($cliente))
             ->response()

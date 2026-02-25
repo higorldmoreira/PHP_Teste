@@ -9,6 +9,8 @@ use App\Http\Requests\StorePropostaRequest;
 use App\Http\Requests\UpdatePropostaRequest;
 use App\Http\Resources\AuditoriaPropostaResource;
 use App\Http\Resources\PropostaResource;
+use App\DTOs\CriarPropostaDTO;
+use App\DTOs\AtualizarPropostaDTO;
 use App\Models\Proposta;
 use App\Services\PropostaService;
 use Illuminate\Http\JsonResponse;
@@ -72,11 +74,9 @@ class PropostaController extends Controller
     )]
     public function store(StorePropostaRequest $request): JsonResponse
     {
-        $data = collect($request->validated())
-            ->except('idempotency_key')
-            ->all();
-
-        $proposta = $this->propostaService->create($data);
+        $proposta = $this->propostaService->create(
+            CriarPropostaDTO::fromArray($request->safe()->except('idempotency_key')),
+        );
 
         return (new PropostaResource($proposta->load('cliente')))
             ->response()
@@ -103,7 +103,10 @@ class PropostaController extends Controller
     )]
     public function update(UpdatePropostaRequest $request, Proposta $proposta): PropostaResource
     {
-        $proposta = $this->propostaService->update($proposta, $request->validated());
+        $proposta = $this->propostaService->update(
+            $proposta,
+            AtualizarPropostaDTO::fromArray($request->validated()),
+        );
 
         return new PropostaResource($proposta->load('cliente'));
     }
@@ -144,18 +147,23 @@ class PropostaController extends Controller
         path: '/api/v1/propostas/{proposta}/auditoria',
         summary: 'Histórico de auditoria da proposta',
         tags: ['Propostas'],
-        parameters: [new OA\Parameter(name: 'proposta', in: 'path', required: true, schema: new OA\Schema(type: 'integer'))],
+        parameters: [
+            new OA\Parameter(name: 'proposta', in: 'path', required: true, schema: new OA\Schema(type: 'integer')),
+            new OA\Parameter(name: 'per_page', in: 'query', required: false, schema: new OA\Schema(type: 'integer', default: 20)),
+        ],
         responses: [
-            new OA\Response(response: 200, description: 'Histórico de auditoria', content: new OA\JsonContent(type: 'array', items: new OA\Items(ref: '#/components/schemas/AuditoriaResource'))),
+            new OA\Response(response: 200, description: 'Histórico de auditoria paginado', content: new OA\JsonContent(type: 'array', items: new OA\Items(ref: '#/components/schemas/AuditoriaResource'))),
         ]
     )]
-    public function auditoria(Proposta $proposta): AnonymousResourceCollection
+    public function auditoria(Request $request, Proposta $proposta): AnonymousResourceCollection
     {
+        $perPage = min((int) $request->query('per_page', 20), 100);
+
         $auditorias = $proposta->auditorias()
-            ->reorder()                        // descarta o orderBy ASC da relação
+            ->reorder()
             ->orderByDesc('created_at')
-            ->orderByDesc('id')               // desempate determinístico por PK
-            ->get();
+            ->orderByDesc('id')
+            ->paginate($perPage);
 
         return AuditoriaPropostaResource::collection($auditorias);
     }

@@ -7,6 +7,7 @@ namespace App\Http\Controllers\Api\V1;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreOrderRequest;
 use App\Http\Resources\OrderResource;
+use App\DTOs\CriarOrderDTO;
 use App\Models\Order;
 use App\Models\Proposta;
 use App\Services\OrderService;
@@ -35,9 +36,11 @@ class OrderController extends Controller
     )]
     public function index(Request $request): AnonymousResourceCollection
     {
+        $perPage = min(max((int) $request->query('per_page', 15), 1), 100);
+
         $orders = $this->service->paginate(
             status: $request->query('status'),
-            perPage: (int) $request->query('per_page', 15),
+            perPage: $perPage,
         );
 
         return OrderResource::collection($orders);
@@ -67,7 +70,7 @@ class OrderController extends Controller
     {
         $order = $this->service->placeOrder(
             proposta: $proposta,
-            data: $request->validated(),
+            dto: CriarOrderDTO::fromArray($request->validated()),
         );
 
         return OrderResource::make($order->load('proposta'))

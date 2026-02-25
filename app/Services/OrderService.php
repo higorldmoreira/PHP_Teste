@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services;
 
+use App\DTOs\CriarOrderDTO;
 use App\Enums\OrderStatus;
 use App\Enums\PropostaStatusEnum;
 use App\Exceptions\BusinessException;
@@ -11,16 +12,16 @@ use App\Models\Order;
 use App\Models\Proposta;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class OrderService
 {
     /**
      * Cria um pedido a partir de uma Proposta APPROVED.
      *
-     * @param  array<string, mixed>  $data
      * @throws BusinessException
      */
-    public function placeOrder(Proposta $proposta, array $data = []): Order
+    public function placeOrder(Proposta $proposta, CriarOrderDTO $dto): Order
     {
         if ($proposta->status !== PropostaStatusEnum::APPROVED) {
             throw BusinessException::because(
@@ -31,13 +32,21 @@ class OrderService
 
         $this->ensureNoActiveOrder($proposta);
 
-        return DB::transaction(static function () use ($proposta, $data): Order {
-            return Order::create([
-                ...$data,
+        return DB::transaction(static function () use ($proposta, $dto): Order {
+            $order = Order::create([
+                ...$dto->toArray(),
                 'proposta_id' => $proposta->id,
                 'status'      => OrderStatus::PENDING->value,
                 'valor_total' => $proposta->valor_mensal,
             ]);
+
+            Log::info('order.placed', [
+                'order_id'    => $order->id,
+                'proposta_id' => $proposta->id,
+                'valor_total' => $order->valor_total,
+            ]);
+
+            return $order;
         });
     }
 
@@ -57,6 +66,12 @@ class OrderService
 
         return DB::transaction(static function () use ($order): Order {
             $order->update(['status' => OrderStatus::CANCELED->value]);
+
+            Log::info('order.canceled', [
+                'order_id'    => $order->id,
+                'proposta_id' => $order->proposta_id,
+            ]);
+
             return $order->refresh();
         });
     }

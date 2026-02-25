@@ -4,9 +4,12 @@ declare(strict_types=1);
 
 namespace Tests\Unit;
 
+use App\DTOs\AtualizarPropostaDTO;
+use App\DTOs\CriarPropostaDTO;
 use App\Enums\PropostaStatusEnum;
 use App\Exceptions\BusinessException;
 use App\Exceptions\ConcurrencyException;
+use App\Filters\PropostaFilter;
 use App\Models\Cliente;
 use App\Models\Proposta;
 use App\Services\PropostaService;
@@ -22,7 +25,7 @@ class PropostaServiceTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->service = new PropostaService();
+        $this->service = new PropostaService(new PropostaFilter());
     }
 
     // ── create ────────────────────────────────────────────────────────────────
@@ -31,14 +34,13 @@ class PropostaServiceTest extends TestCase
     {
         $cliente = Cliente::factory()->create();
 
-        $proposta = $this->service->create([
+        $proposta = $this->service->create(CriarPropostaDTO::fromArray([
             'cliente_id'   => $cliente->id,
             'produto'      => 'Crédito',
             'valor_mensal' => 500.00,
             'origem'       => 'api',
-            'status'       => 'approved', // deve ser ignorado
-            'versao'       => 99,         // deve ser ignorado
-        ]);
+            // 'status' e 'versao' são omitidos pois o DTO não os aceita
+        ]));
 
         $this->assertSame(PropostaStatusEnum::DRAFT, $proposta->status);
         $this->assertSame(1, $proposta->versao);
@@ -53,10 +55,10 @@ class PropostaServiceTest extends TestCase
             'versao'     => 1,
         ]);
 
-        $atualizado = $this->service->update($proposta, [
+        $atualizado = $this->service->update($proposta, AtualizarPropostaDTO::fromArray([
             'versao'  => 1,
             'produto' => 'Novo produto',
-        ]);
+        ]));
 
         $this->assertSame('Novo produto', $atualizado->produto);
         $this->assertSame(2, $atualizado->versao);
@@ -71,10 +73,10 @@ class PropostaServiceTest extends TestCase
 
         $this->expectException(ConcurrencyException::class);
 
-        $this->service->update($proposta, [
+        $this->service->update($proposta, AtualizarPropostaDTO::fromArray([
             'versao'  => 1, // diverge de 3
             'produto' => 'Conflito',
-        ]);
+        ]));
     }
 
     public function test_update_lanca_business_exception_para_proposta_terminal(): void
@@ -86,7 +88,7 @@ class PropostaServiceTest extends TestCase
 
         $this->expectException(BusinessException::class);
 
-        $this->service->update($proposta, ['versao' => 1, 'produto' => 'Bloqueado']);
+        $this->service->update($proposta, AtualizarPropostaDTO::fromArray(['versao' => 1, 'produto' => 'Bloqueado']));
     }
 
     // ── submit ────────────────────────────────────────────────────────────────

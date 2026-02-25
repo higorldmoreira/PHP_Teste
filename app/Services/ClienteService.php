@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace App\Services;
 
+use App\DTOs\CriarClienteDTO;
 use App\Models\Cliente;
+use Illuminate\Support\Facades\Log;
 
 /**
  * ClienteService
@@ -15,13 +17,16 @@ class ClienteService
 {
     /**
      * Persiste um novo cliente com os dados validados.
-     *
-     * @param  array<string, mixed>  $data
      */
-    public function create(array $data): Cliente
+    public function create(CriarClienteDTO $dto): Cliente
     {
         /** @var Cliente $cliente */
-        $cliente = Cliente::create($data);
+        $cliente = Cliente::create($dto->toArray());
+
+        Log::info('cliente.created', [
+            'cliente_id' => $cliente->id,
+            'email'      => $cliente->email,
+        ]);
 
         return $cliente;
     }

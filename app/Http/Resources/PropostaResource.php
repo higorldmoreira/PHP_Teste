@@ -39,9 +39,6 @@ class PropostaResource extends JsonResource
 
             'created_at'   => $this->created_at?->toIso8601String(),
             'updated_at'   => $this->updated_at?->toIso8601String(),
-
-            // null quando não deletada — presente apenas para administração
-            'deleted_at'   => $this->deleted_at?->toIso8601String(),
         ];
     }
 }

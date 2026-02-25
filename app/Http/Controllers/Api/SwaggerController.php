@@ -23,6 +23,10 @@ use OpenApi\Attributes as OA;
     url: '/',
     description: 'API v1'
 )]
+#[OA\Tag(
+    name: 'Utilitários',
+    description: 'Endpoints auxiliares: health check, geração de Idempotency Keys'
+)]
 
 // ── Schemas reutilizáveis ─────────────────────────────────────────────────────
 
@@ -69,6 +73,18 @@ use OpenApi\Attributes as OA;
         new OA\Property(property: 'evento', type: 'string', enum: ['created', 'updated_fields', 'status_changed', 'deleted_logical']),
         new OA\Property(property: 'payload', type: 'object'),
         new OA\Property(property: 'created_at', type: 'string', format: 'date-time'),
+    ]
+)]
+#[OA\Schema(
+    schema: 'IdempotencyKeyResource',
+    properties: [
+        new OA\Property(
+            property: 'keys',
+            type: 'array',
+            items: new OA\Items(type: 'string', format: 'uuid', example: '550e8400-e29b-41d4-a716-446655440000')
+        ),
+        new OA\Property(property: 'qty',   type: 'integer', example: 1),
+        new OA\Property(property: 'usage', type: 'string',  example: 'Idempotency-Key: 550e8400-e29b-41d4-a716-446655440000'),
     ]
 )]
 #[OA\Schema(

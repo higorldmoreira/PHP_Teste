@@ -2,12 +2,19 @@
 
 declare(strict_types=1);
 
+use App\Http\Controllers\Api\HealthController;
+use App\Http\Controllers\Api\IdempotencyKeyController;
 use App\Http\Controllers\Api\V1\ClienteController;
 use App\Http\Controllers\Api\V1\OrderController;
 use App\Http\Controllers\Api\V1\PropostaController;
 use Illuminate\Support\Facades\Route;
 
-Route::prefix('v1')->middleware('throttle:api')->group(function (): void {
+// ── Utilitários (sem versionamento, sem rate limit) ───────────────────────
+Route::get('/health', HealthController::class)->name('health');
+Route::get('/idempotency-key', IdempotencyKeyController::class)->name('idempotency-key.generate');
+
+// ── API v1 ─────────────────────────────────────────────────────────────────
+Route::prefix('v1')->middleware(['throttle:api', 'api.version'])->group(function (): void {
 
     Route::post('clientes',          [ClienteController::class, 'store'])->middleware(['idempotency', 'throttle:api-write'])->name('clientes.store');
     Route::get('clientes/{cliente}', [ClienteController::class, 'show'])->name('clientes.show');

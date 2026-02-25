@@ -4,13 +4,15 @@ declare(strict_types=1);
 
 namespace App\Enums;
 
+use App\Contracts\StatusEnumInterface;
+
 /**
  * Estados possíveis de um pedido (Order).
  *
  * Convenção: SCREAMING_SNAKE_CASE, alinhado aos demais enums do projeto.
  * Valor string: americano singular, compatível com coluna `status` no banco.
  */
-enum OrderStatus: string
+enum OrderStatus: string implements StatusEnumInterface
 {
     case PENDING   = 'pending';
     case APPROVED  = 'approved';

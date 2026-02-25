@@ -29,12 +29,14 @@ class PropostaSeeder extends Seeder
             }
 
             foreach ($clientes->take(10) as $cliente) {
-                // 1 proposta em cada estado principal por cliente de amostra
-                Proposta::factory()->draft()->create(['cliente_id' => $cliente->id]);
-                Proposta::factory()->submitted()->create(['cliente_id' => $cliente->id]);
-                Proposta::factory()->approved()->create(['cliente_id' => $cliente->id]);
-                Proposta::factory()->rejected()->create(['cliente_id' => $cliente->id]);
-                Proposta::factory()->canceled()->create(['cliente_id' => $cliente->id]);
+                // Idempotente: cria apenas os estados que ainda não existem para o cliente
+                $existingStatuses = $cliente->propostas()->pluck('status')->toArray();
+
+                foreach (['draft', 'submitted', 'approved', 'rejected', 'canceled'] as $state) {
+                    if (! in_array($state, $existingStatuses, strict: true)) {
+                        Proposta::factory()->{$state}()->create(['cliente_id' => $cliente->id]);
+                    }
+                }
             }
         });
 

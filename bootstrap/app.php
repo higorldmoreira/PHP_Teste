@@ -2,6 +2,7 @@
 
 use App\Exceptions\BusinessException;
 use App\Exceptions\ConcurrencyException;
+use App\Http\Middleware\ApiVersionMiddleware;
 use App\Http\Middleware\IdempotencyMiddleware;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
@@ -17,7 +18,8 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         // Registrado como alias para ser aplicado apenas nas rotas de store (POST)
         $middleware->alias([
-            'idempotency' => IdempotencyMiddleware::class,
+            'idempotency'   => IdempotencyMiddleware::class,
+            'api.version'   => ApiVersionMiddleware::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

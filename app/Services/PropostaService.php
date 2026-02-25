@@ -4,12 +4,16 @@ declare(strict_types=1);
 
 namespace App\Services;
 
+use App\DTOs\AtualizarPropostaDTO;
+use App\DTOs\CriarPropostaDTO;
 use App\Enums\PropostaStatusEnum;
 use App\Exceptions\BusinessException;
 use App\Exceptions\ConcurrencyException;
+use App\Filters\PropostaFilter;
 use App\Models\Proposta;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 /**
  * PropostaService
@@ -23,10 +27,12 @@ use Illuminate\Support\Facades\DB;
  *  - Propostas em estado terminal (APPROVED, REJECTED, CANCELED) são imutáveis.
  *  - Conflito de versão lança ConcurrencyException (HTTP 409).
  *  - Transição inválida lança BusinessException (HTTP 422).
- *
  */
 class PropostaService
 {
+    public function __construct(
+        private readonly PropostaFilter $filter,
+    ) {}
 
     /**
      * Pesquisa propostas aplicando filtros opcionais, ordenação e paginação.
@@ -37,47 +43,30 @@ class PropostaService
     {
         $query = Proposta::with('cliente');
 
-        if ($status = $filters['status'] ?? null) {
-            $query->where('status', $status);
-        }
+        $query = $this->filter->apply($query, $filters);
 
-        if ($clienteId = $filters['cliente_id'] ?? null) {
-            $query->where('cliente_id', (int) $clienteId);
-        }
-
-        /** @var string $sortField */
-        $sortField = $filters['sort'] ?? 'created_at';
-        $sortDirection = ($filters['direction'] ?? 'desc') === 'asc' ? 'asc' : 'desc';
-
-        // Allowlist de campos ordenáveis para evitar injeção via query string
-        $allowedSorts = ['created_at', 'updated_at', 'valor_mensal', 'status', 'versao'];
-        if (! in_array($sortField, $allowedSorts, strict: true)) {
-            $sortField = 'created_at';
-        }
-
-        $query->orderBy($sortField, $sortDirection);
-
-        $perPage = min($perPage, 100);
-
-        return $query->paginate($perPage);
+        return $query->paginate(min($perPage, 100));
     }
 
     /**
-     * Cria uma nova proposta forçando status DRAFT e versão 1,
-     * independentemente do que vier em $data.
-     *
-     * @param  array<string, mixed>  $data
+     * Cria uma nova proposta forçando status DRAFT e versão 1.
      *
      * @throws \Throwable
      */
-    public function create(array $data): Proposta
+    public function create(CriarPropostaDTO $dto): Proposta
     {
-        return DB::transaction(function () use ($data): Proposta {
+        return DB::transaction(function () use ($dto): Proposta {
             /** @var Proposta $proposta */
             $proposta = Proposta::create([
-                ...$data,
+                ...$dto->toArray(),
                 'status' => PropostaStatusEnum::DRAFT->value,
                 'versao' => 1,
+            ]);
+
+            Log::info('proposta.created', [
+                'proposta_id' => $proposta->id,
+                'cliente_id'  => $proposta->cliente_id,
+                'origem'      => $proposta->origem->value,
             ]);
 
             return $proposta;
@@ -85,23 +74,21 @@ class PropostaService
     }
 
     /**
-     * Atualiza campos da proposta após validar lock otimista.
+     * Atualiza campos da proposta com lock otimista no nível do banco.
      *
      * Fluxo:
      *  1. Rejeita se a proposta está em estado terminal.
-     *  2. Compara $data['versao'] com $proposta->versao — lança
-     *     ConcurrencyException se divergirem.
-     *  3. Incrementa versao e salva os dados.
-     *
-     * @param  array<string, mixed>  $data  Deve conter a chave 'versao'.
+     *  2. Emite UPDATE ... WHERE versao = $dto->versao.
+     *     Se 0 linhas afetadas → versão desatualizada → ConcurrencyException (409).
+     *  3. Retorna o modelo atualizado.
      *
      * @throws BusinessException      Se a proposta estiver em estado terminal.
      * @throws ConcurrencyException   Se a versão enviada divergir da persistida.
      * @throws \Throwable
      */
-    public function update(Proposta $proposta, array $data): Proposta
+    public function update(Proposta $proposta, AtualizarPropostaDTO $dto): Proposta
     {
-        return DB::transaction(function () use ($proposta, $data): Proposta {
+        return DB::transaction(function () use ($proposta, $dto): Proposta {
             if ($proposta->status->isTerminal()) {
                 throw BusinessException::because(
                     "A proposta #{$proposta->id} está em estado terminal"
@@ -109,21 +96,39 @@ class PropostaService
                 );
             }
 
-            $versaoEnviada = (int) ($data['versao'] ?? -1);
+            $changedFields = $dto->changedFields();
 
-            if ($versaoEnviada !== $proposta->versao) {
+            if (empty($changedFields)) {
+                return $proposta;
+            }
+
+            // lockForUpdate() garante atomicidade no check de versão e dispara o Observer
+            // (::where()->update() é mais eficiente mas bypassa os eventos do Eloquent)
+            /** @var Proposta $locked */
+            $locked = Proposta::lockForUpdate()->findOrFail($proposta->id);
+
+            if ($locked->versao !== $dto->versao) {
+                Log::warning('proposta.concurrency_conflict', [
+                    'proposta_id'   => $proposta->id,
+                    'versao_client' => $dto->versao,
+                    'versao_db'     => $locked->versao,
+                ]);
+
                 throw ConcurrencyException::staleVersion();
             }
 
-            // Remove 'versao' e campos imutáveis de $data para não sobrescrever
-            // via fillable acidentalmente antes de incrementar
-            unset($data['versao'], $data['status']);
+            // fill + save → dispara PropostaObserver::updated() → evento PropostaCamposAlterados
+            $locked->fill($changedFields);
+            $locked->versao += 1;
+            $locked->save();
 
-            $proposta->fill($data);
-            $proposta->versao += 1;
-            $proposta->save();
+            Log::info('proposta.updated', [
+                'proposta_id' => $locked->id,
+                'fields'      => array_keys($changedFields),
+                'versao_from' => $dto->versao,
+            ]);
 
-            return $proposta->refresh();
+            return $locked->refresh();
         });
     }
 
@@ -212,19 +217,32 @@ class PropostaService
     }
 
     /**
-     * Aplica a transição de status e incrementa a versão atomicamente.
-     * Centraliza a persistência para evitar duplicação nos métodos públicos.
+     * Aplica a transição de status com lock pessimista para evitar
+     * double-transition concorrente e incrementa a versão atomicamente.
      *
      * @throws \Throwable
      */
     private function transition(Proposta $proposta, PropostaStatusEnum $novoStatus): Proposta
     {
         return DB::transaction(function () use ($proposta, $novoStatus): Proposta {
-            $proposta->status = $novoStatus;
-            $proposta->versao += 1;
-            $proposta->save();
+            // lockForUpdate() impede que duas transações paralelas leiam o mesmo
+            // registro e apliquem transições simultâneas
+            /** @var Proposta $locked */
+            $locked = Proposta::lockForUpdate()->findOrFail($proposta->id);
 
-            return $proposta->refresh();
+            $statusAnterior = $locked->status;
+            $locked->status = $novoStatus;
+            $locked->versao += 1;
+            $locked->save();
+
+            Log::info('proposta.status_changed', [
+                'proposta_id' => $locked->id,
+                'de'          => $statusAnterior->value,
+                'para'        => $novoStatus->value,
+                'versao'      => $locked->versao,
+            ]);
+
+            return $locked->refresh();
         });
     }
 }

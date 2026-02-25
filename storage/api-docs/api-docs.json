@@ -16,6 +16,112 @@
         }
     ],
     "paths": {
+        "/api/health": {
+            "get": {
+                "tags": [
+                    "Health"
+                ],
+                "summary": "Verifica a saúde da aplicação",
+                "description": "Endpoint de saúde — usado por load balancers, Kubernetes probes\ne ferramentas de monitoramento (Uptime Robot, Datadog, etc.).\n\nGET /api/health → 200 OK   (todos os serviços respondendo)\nGET /api/health → 503 Service Unavailable  (algum serviço degradado)",
+                "operationId": "f38cb527594b9bff9dcb224037be589c",
+                "responses": {
+                    "200": {
+                        "description": "Todos os serviços operacionais",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "status": {
+                                            "type": "string",
+                                            "example": "ok"
+                                        },
+                                        "db": {
+                                            "type": "string",
+                                            "example": "up"
+                                        },
+                                        "cache": {
+                                            "type": "string",
+                                            "example": "up"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "503": {
+                        "description": "Um ou mais serviços degradados",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "status": {
+                                            "type": "string",
+                                            "example": "degraded"
+                                        },
+                                        "db": {
+                                            "type": "string",
+                                            "example": "down"
+                                        },
+                                        "cache": {
+                                            "type": "string",
+                                            "example": "up"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/idempotency-key": {
+            "get": {
+                "tags": [
+                    "Utilitários"
+                ],
+                "summary": "Gera um ou mais Idempotency Keys (UUID v4)",
+                "description": "Retorna UUIDs prontos para uso no header `Idempotency-Key` das requisições POST. Cada chave deve ser usada em apenas UMA requisição. Máximo de 10 chaves por chamada.",
+                "operationId": "332e6f4f036cee4be4c1524135458b2b",
+                "parameters": [
+                    {
+                        "name": "qty",
+                        "in": "query",
+                        "description": "Quantidade de UUIDs a gerar (1–10). Default: 1.",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "default": 1,
+                            "maximum": 10,
+                            "minimum": 1
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "UUIDs gerados com sucesso",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/IdempotencyKeyResource"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Parâmetro qty inválido",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorBusiness"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/clientes": {
             "post": {
                 "tags": [
@@ -699,11 +805,20 @@
                         "schema": {
                             "type": "integer"
                         }
+                    },
+                    {
+                        "name": "per_page",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "default": 20
+                        }
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "Histórico de auditoria",
+                        "description": "Histórico de auditoria paginado",
                         "content": {
                             "application/json": {
                                 "schema": {
@@ -869,6 +984,27 @@
                 },
                 "type": "object"
             },
+            "IdempotencyKeyResource": {
+                "properties": {
+                    "keys": {
+                        "type": "array",
+                        "items": {
+                            "type": "string",
+                            "format": "uuid",
+                            "example": "550e8400-e29b-41d4-a716-446655440000"
+                        }
+                    },
+                    "qty": {
+                        "type": "integer",
+                        "example": 1
+                    },
+                    "usage": {
+                        "type": "string",
+                        "example": "Idempotency-Key: 550e8400-e29b-41d4-a716-446655440000"
+                    }
+                },
+                "type": "object"
+            },
             "ErrorBusiness": {
                 "properties": {
                     "error": {
@@ -899,12 +1035,20 @@
     },
     "tags": [
         {
+            "name": "Utilitários",
+            "description": "Endpoints auxiliares: health check, geração de Idempotency Keys"
+        },
+        {
             "name": "Clientes",
             "description": "Gestão de clientes"
         },
         {
             "name": "Propostas",
             "description": "Gestão de propostas com máquina de estados, optimistic lock e auditoria"
+        },
+        {
+            "name": "Health",
+            "description": "Health"
         },
         {
             "name": "Orders",

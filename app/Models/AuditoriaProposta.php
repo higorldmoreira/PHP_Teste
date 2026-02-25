@@ -76,7 +76,7 @@ class AuditoriaProposta extends Model
         return static::create([
             'proposta_id' => $proposta->id,
             'actor'       => $actor,
-            'evento'      => $evento->value,
+            'evento'      => $evento,  // Eloquent cast (AuditoriaEventoEnum) converte para value no INSERT
             'payload'     => $payload,
         ]);
     }

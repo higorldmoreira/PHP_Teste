@@ -9,6 +9,7 @@ use App\Exceptions\BusinessException;
 use App\Models\Cliente;
 use App\Models\Order;
 use App\Models\Proposta;
+use App\DTOs\CriarOrderDTO;
 use App\Services\OrderService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -34,7 +35,7 @@ class OrderServiceTest extends TestCase
             'valor_mensal' => 750.00,
         ]);
 
-        $order = $this->service->placeOrder($proposta);
+        $order = $this->service->placeOrder($proposta, new CriarOrderDTO());
 
         $this->assertSame(OrderStatus::PENDING, $order->status);
         $this->assertSame($proposta->id, $order->proposta_id);
@@ -49,7 +50,7 @@ class OrderServiceTest extends TestCase
             ]);
 
             try {
-                $this->service->placeOrder($proposta);
+                $this->service->placeOrder($proposta, new CriarOrderDTO());
                 $this->fail("Deveria ter lançado BusinessException para status '{$state}'");
             } catch (BusinessException) {
                 $this->assertTrue(true);
@@ -63,11 +64,11 @@ class OrderServiceTest extends TestCase
             'cliente_id' => Cliente::factory()->create()->id,
         ]);
 
-        $this->service->placeOrder($proposta);
+        $this->service->placeOrder($proposta, new CriarOrderDTO());
 
         $this->expectException(BusinessException::class);
 
-        $this->service->placeOrder($proposta);
+        $this->service->placeOrder($proposta, new CriarOrderDTO());
     }
 
     public function test_place_order_permite_novo_pedido_apos_cancelamento(): void
@@ -76,11 +77,11 @@ class OrderServiceTest extends TestCase
             'cliente_id' => Cliente::factory()->create()->id,
         ]);
 
-        $primeiro = $this->service->placeOrder($proposta);
+        $primeiro = $this->service->placeOrder($proposta, new CriarOrderDTO());
         $this->service->cancel($primeiro);
 
         // Deve ser possível criar novo pedido após cancelar o anterior
-        $segundo = $this->service->placeOrder($proposta);
+        $segundo = $this->service->placeOrder($proposta, new CriarOrderDTO());
 
         $this->assertSame(OrderStatus::PENDING, $segundo->status);
         $this->assertDatabaseCount('orders', 2);

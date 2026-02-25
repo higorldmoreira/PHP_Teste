@@ -21,7 +21,7 @@ class StoreClienteRequest extends FormRequest
     {
         return [
             'nome'      => ['required', 'string', 'max:150'],
-            'email'     => ['required', 'email:rfc,dns', Rule::unique('clientes', 'email')],
+            'email'     => ['required', 'email:rfc', Rule::unique('clientes', 'email')],  // dns lookup quebra em CI/ambientes isolados
             'documento' => [
                 'required',
                 'string',

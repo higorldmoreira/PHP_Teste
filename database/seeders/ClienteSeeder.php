@@ -18,16 +18,21 @@ class ClienteSeeder extends Seeder
 
     public function run(): void
     {
-        $this->command->info("Criando {$this->total} clientes com propostas...");
+        $existing = Cliente::count();
 
-        $bar = $this->command->getOutput()->createProgressBar($this->total);
+        if ($existing >= $this->total) {
+            $this->command->info("Seeder idêmpotente: {$existing} clientes já existem, nada a criar.");
+            return;
+        }
+
+        $toCreate = $this->total - $existing;
+        $this->command->info("Criando {$toCreate} clientes com propostas...");
+
+        $bar = $this->command->getOutput()->createProgressBar($toCreate);
         $bar->start();
 
-        // Envolve tudo em uma única transação para performance e consistência
-        DB::transaction(function () use ($bar): void {
-            for ($i = 0; $i < $this->total; $i++) {
-                // hasPropostas() usa a mágica de relacionamento das factories do Laravel,
-                // resolvendo automaticamente a FK cliente_id sem setá-la manualmente.
+        DB::transaction(function () use ($toCreate, $bar): void {
+            for ($i = 0; $i < $toCreate; $i++) {
                 Cliente::factory()
                     ->hasPropostas(random_int(1, 5))
                     ->create();

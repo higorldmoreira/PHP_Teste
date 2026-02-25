@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace App\Enums;
 
-enum PropostaStatusEnum: string
+use App\Contracts\StatusEnumInterface;
+
+enum PropostaStatusEnum: string implements StatusEnumInterface
 {
     case DRAFT     = 'draft';
     case SUBMITTED = 'submitted';
@@ -49,6 +51,12 @@ enum PropostaStatusEnum: string
             self::DRAFT,
             self::SUBMITTED,
         ], strict: true);
+    }
+
+    /** Alias de isCancelable() — satisfaz o contrato StatusEnumInterface. */
+    public function isCancellable(): bool
+    {
+        return $this->isCancelable();
     }
 
     /**
